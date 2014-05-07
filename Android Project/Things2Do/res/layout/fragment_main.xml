@@ -9,8 +9,99 @@
     tools:context="com.jtilley.things2do.MainActivity$PlaceholderFragment" >
 
     <TextView
+        android:id="@+id/loginTitle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="@string/hello_world" />
+        android:layout_alignParentTop="true"
+        android:layout_centerHorizontal="true"
+        android:text="@string/login_title" />
+
+    <TextView
+        android:id="@+id/usernameTitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentLeft="true"
+        android:layout_below="@+id/loginTitle"
+        android:layout_marginTop="16dp"
+        android:text="@string/user_title" />
+
+    <EditText
+        android:id="@+id/userInput"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignLeft="@+id/usernameTitle"
+        android:layout_below="@+id/usernameTitle"
+        android:ems="10"
+        android:inputType="text" >
+        
+        <requestFocus />
+    </EditText>
+
+    <TextView
+        android:id="@+id/passwordTitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignLeft="@+id/userInput"
+        android:layout_below="@+id/userInput"
+        android:layout_marginTop="30dp"
+        android:text="@string/password_title" />
+
+    <EditText
+        android:id="@+id/passwordInput"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignLeft="@+id/passwordTitle"
+        android:layout_below="@+id/passwordTitle"
+        android:ems="10" 
+        android:inputType="textPassword"/>
+
+    <TextView
+        android:id="@+id/emailTitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignLeft="@+id/passwordInput"
+        android:layout_below="@+id/passwordInput"
+        android:layout_marginTop="18dp"
+        android:text="@string/email_title"
+        android:visibility="gone" />
+
+    <EditText
+        android:id="@+id/emailInput"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignLeft="@+id/emailTitle"
+        android:layout_below="@+id/emailTitle"
+        android:ems="10"
+        android:inputType="textEmailAddress"
+        android:visibility="gone" />
+
+    <Button
+        android:id="@+id/loginButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/emailInput"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="10dp"
+        android:text="@string/login_button"/>
+
+    <Button
+        android:id="@+id/signupButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/loginButton"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="10dp"
+        android:text="@string/signup_button"/>
+
+    <Button
+        android:id="@+id/cancelSignButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/signupButton"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="10dp"
+        android:fitsSystemWindows="true"
+        android:text="@string/cancel"
+        android:visibility="gone" />
 
 </RelativeLayout>

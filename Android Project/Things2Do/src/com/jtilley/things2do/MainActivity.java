@@ -1,35 +1,67 @@
 package com.jtilley.things2do;
 
-import com.parse.Parse;
-import com.parse.ParseAnalytics;
-import com.parse.ParseObject;
-
 import android.app.Activity;
 import android.app.Fragment;
+import android.content.Context;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.View.OnClickListener;
 import android.view.ViewGroup;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.TextView;
+import android.widget.Toast;
+
+import com.parse.Parse;
+import com.parse.ParseException;
+import com.parse.ParseUser;
+import com.parse.SignUpCallback;
 
 public class MainActivity extends Activity {
-
+Context mContext;
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
-		
+		mContext = this;
 		Parse.initialize(this,"CdeHn8mEBCyXEyUSXakxslroJJ7s3rhssAatCooS", "4rUjsJqJamYFQdOyZ9J3eegMdJRXMkOMlwVL8YZV");
 		
-		ParseObject testObject = new ParseObject("TestObject");
-		testObject.put("foo", "bar");
-		testObject.saveInBackground();
+		ParseUser current = ParseUser.getCurrentUser();
+		if(current != null){
+			Log.i("Current", current.getUsername().toString());
+		}
 		
 		if (savedInstanceState == null) {
 			getFragmentManager().beginTransaction()
-					.add(R.id.container, new PlaceholderFragment()).commit();
+					.add(R.id.container, new PlaceholderFragment(this)).commit();
 		}
+	}
+	
+	public void signUpAccount(String userName, String password, String email){
+		ParseUser newUser = new ParseUser();
+		newUser.setUsername(userName);
+		newUser.setPassword(password);
+		newUser.setEmail(email);
+		newUser.signUpInBackground(new SignUpCallback() {
+			
+			@Override
+			public void done(ParseException arg0) {
+				// TODO Auto-generated method stub
+				if(arg0 == null){
+					
+				}else{
+					if(arg0.getCode() == ParseException.USERNAME_TAKEN){
+						Toast.makeText(mContext, arg0.getMessage(), Toast.LENGTH_LONG).show();
+					}else if(arg0.getCode() == ParseException.EMAIL_TAKEN){
+						Toast.makeText(mContext, arg0.getMessage(), Toast.LENGTH_LONG).show();
+					}
+				}
+			}
+		});
 	}
 
 	@Override
@@ -56,8 +88,18 @@ public class MainActivity extends Activity {
 	 * A placeholder fragment containing a simple view.
 	 */
 	public static class PlaceholderFragment extends Fragment {
-
-		public PlaceholderFragment() {
+	MainActivity activity;
+	Boolean signUp;
+	Button signupButton;
+	Button loginButton;
+	Button cancelButton;
+	TextView emailTitle;
+	EditText emailInput;
+	EditText userInput;
+	EditText passwordInput;
+	
+		public PlaceholderFragment(MainActivity act) {
+			activity = act;
 		}
 
 		@Override
@@ -65,6 +107,62 @@ public class MainActivity extends Activity {
 				Bundle savedInstanceState) {
 			View rootView = inflater.inflate(R.layout.fragment_main, container,
 					false);
+			signUp = false;
+			loginButton = (Button) rootView.findViewById(R.id.loginButton);
+			signupButton = (Button) rootView.findViewById(R.id.signupButton);
+			cancelButton = (Button) rootView.findViewById(R.id.cancelSignButton);
+			emailTitle = (TextView) rootView.findViewById(R.id.emailTitle);
+			emailInput = (EditText) rootView.findViewById(R.id.emailInput);
+			userInput = (EditText) rootView.findViewById(R.id.userInput);
+			passwordInput = (EditText) rootView.findViewById(R.id.passwordInput);
+			
+			signupButton.setOnClickListener(new OnClickListener() {
+				
+				@Override
+				public void onClick(View v) {
+					// TODO Auto-generated method stub
+					if(signUp == false){
+						loginButton.setVisibility(View.GONE);
+						cancelButton.setVisibility(View.VISIBLE);
+						emailTitle.setVisibility(View.VISIBLE);
+						emailInput.setVisibility(View.VISIBLE);
+						signUp = true;
+					}
+					else if(signUp == true){
+						Boolean validate = true;
+						if(userInput.getText().length() == 0){
+							userInput.setError("Username is required!");
+							validate = false;
+						}
+						if(passwordInput.getText().length() == 0){
+							passwordInput.setError("Password is required!");
+							validate = false;
+						}
+						if(emailInput.getText().length() == 0){
+							emailInput.setError("Email is required!");
+							validate = false;
+						}
+						if(validate == true){
+							activity.signUpAccount(userInput.getText().toString(), passwordInput.getText().toString(), emailInput.getText().toString());
+							signUp = false;
+						}
+					}
+				}
+			});
+			
+			cancelButton.setOnClickListener(new OnClickListener() {
+				
+				@Override
+				public void onClick(View v) {
+					// TODO Auto-generated method stub
+					loginButton.setVisibility(View.VISIBLE);
+					cancelButton.setVisibility(View.GONE);
+					emailTitle.setVisibility(View.GONE);
+					emailInput.setVisibility(View.GONE);
+					userInput.setText("");
+					passwordInput.setText("");
+				}
+			});
 			return rootView;
 		}
 	}

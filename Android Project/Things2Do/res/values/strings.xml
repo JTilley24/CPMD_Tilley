@@ -2,7 +2,13 @@
 <resources>
 
     <string name="app_name">Things2Do</string>
-    <string name="hello_world">Hello world!</string>
+    <string name="login_title">Login</string>
+    <string name="user_title">Username:</string>
+    <string name="password_title">Password:</string>
+    <string name="email_title">Email:</string>
+    <string name="login_button">Login</string>
+    <string name="signup_button">Sign up</string>
+    <string name="cancel">Cancel</string>
     <string name="action_settings">Settings</string>
 
 </resources>
