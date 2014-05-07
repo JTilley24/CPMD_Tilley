@@ -1,5 +1,11 @@
 package com.jtilley.things2do;
 
+import java.util.List;
+
+import com.parse.FindCallback;
+import com.parse.ParseException;
+import com.parse.ParseObject;
+import com.parse.ParseQuery;
 import com.parse.ParseUser;
 
 import android.app.Activity;
@@ -12,26 +18,53 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ListView;
 
 public class ListActivity extends Activity {
-
+List<ParseObject> tasksParse;
+PlaceholderFragment frag;
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_list);
 
+		if (savedInstanceState == null) {
+			frag = new PlaceholderFragment(this);
+			getFragmentManager().beginTransaction()
+					.add(R.id.container, frag).commit();
+		}
+	}
+
+	@Override
+	protected void onResume() {
+		// TODO Auto-generated method stub
+		super.onResume();
 		ParseUser current = ParseUser.getCurrentUser();
 		if(current != null){
 			Log.i("USER", current.toString());
 			setTitle(current.getUsername() + "'s List");
-		}
-		
-		if (savedInstanceState == null) {
-			getFragmentManager().beginTransaction()
-					.add(R.id.container, new PlaceholderFragment()).commit();
+			getList();
 		}
 	}
-
+	
+	public void getList(){
+		ParseQuery<ParseObject> query = ParseQuery.getQuery("Task");
+		query.whereEqualTo("User", ParseUser.getCurrentUser());
+		query.findInBackground(new FindCallback<ParseObject>() {
+	
+			@Override
+			public void done(List<ParseObject> list, ParseException e) {
+				// TODO Auto-generated method stub
+				if(e == null){
+					tasksParse = list;
+					frag.displayList(tasksParse);
+				}else{
+					
+				}
+			}
+		});
+	}
+	
 	public void logoutUser(){
 		ParseUser.logOut();
 		Intent intent = new Intent(this, MainActivity.class);
@@ -68,8 +101,10 @@ public class ListActivity extends Activity {
 	 * A placeholder fragment containing a simple view.
 	 */
 	public static class PlaceholderFragment extends Fragment {
-
-		public PlaceholderFragment() {
+	ListView taskList;
+	ListActivity activity;
+		public PlaceholderFragment(ListActivity act) {
+			activity = act;
 		}
 
 		@Override
@@ -77,8 +112,14 @@ public class ListActivity extends Activity {
 				Bundle savedInstanceState) {
 			View rootView = inflater.inflate(R.layout.fragment_list, container,
 					false);
+			taskList = (ListView) rootView.findViewById(R.id.taskList);
+			
 			return rootView;
 		}
+		public void displayList(List<ParseObject> list){
+			if(list != null){
+				taskList.setAdapter(new TasksListAdapter(activity, list));
+			}
+		}
 	}
-
 }

@@ -2,6 +2,8 @@ package com.jtilley.things2do;
 
 import java.util.Calendar;
 
+import org.json.JSONException;
+
 import android.app.Activity;
 import android.app.DatePickerDialog;
 import android.app.DatePickerDialog.OnDateSetListener;
@@ -9,7 +11,6 @@ import android.app.Dialog;
 import android.app.DialogFragment;
 import android.app.Fragment;
 import android.os.Bundle;
-import android.sax.RootElement;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -18,6 +19,10 @@ import android.view.View.OnFocusChangeListener;
 import android.view.ViewGroup;
 import android.widget.DatePicker;
 import android.widget.EditText;
+
+import com.parse.ParseACL;
+import com.parse.ParseObject;
+import com.parse.ParseUser;
 
 public class AddItemActivity extends Activity {
 PlaceholderFragment frag;
@@ -52,8 +57,31 @@ DialogFragment dateDialog;
 		int id = item.getItemId();
 		if (id == R.id.action_settings) {
 			return true;
+		}else if(id == R.id.action_accept){
+			try {
+				frag.getInputs();
+			} catch (NumberFormatException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (JSONException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 		}
 		return super.onOptionsItemSelected(item);
+	}
+	
+	public void saveItem(String name, String date, int time) throws JSONException{
+		ParseUser current = ParseUser.getCurrentUser();
+		ParseObject task = new ParseObject("Task");
+		
+		task.add("Name", name);
+		task.add("Date", date);
+		task.add("Time", time);
+		task.setACL(new ParseACL(current));
+		task.add("User", current);
+		task.saveInBackground();
+		finish();
 	}
 	
 	public class DateDialog extends DialogFragment implements OnDateSetListener{
@@ -122,6 +150,24 @@ DialogFragment dateDialog;
 			date = month + "/" + day + "/" + year;
 			dateInput.setText(date);
 			getView().clearFocus();
+		}
+		public void getInputs() throws NumberFormatException, JSONException{
+			Boolean validate = true;
+			if(taskInput.getText().length() == 0){
+				taskInput.setError("Task is required!");
+				validate = false;
+			}
+			if(dateInput.getText().length() == 0){
+				dateInput.setError("Date is required!");
+				validate = false;
+			}
+			if(timeInput.getText().length() == 0){
+				timeInput.setError("Estimated Hours is required!");
+				validate = false;
+			}
+			if(validate == true){
+				activity.saveItem(taskInput.getText().toString(), date, Integer.valueOf(timeInput.getText().toString()));
+			}
 		}
 	}
 
