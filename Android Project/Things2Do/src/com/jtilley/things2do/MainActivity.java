@@ -3,6 +3,8 @@ package com.jtilley.things2do;
 import android.app.Activity;
 import android.app.Fragment;
 import android.content.Context;
+import android.content.Intent;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -16,6 +18,7 @@ import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.parse.LogInCallback;
 import com.parse.Parse;
 import com.parse.ParseException;
 import com.parse.ParseUser;
@@ -28,12 +31,11 @@ Context mContext;
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
 		mContext = this;
-		Parse.initialize(this,"CdeHn8mEBCyXEyUSXakxslroJJ7s3rhssAatCooS", "4rUjsJqJamYFQdOyZ9J3eegMdJRXMkOMlwVL8YZV");
 		
-		ParseUser current = ParseUser.getCurrentUser();
-		if(current != null){
-			Log.i("Current", current.getUsername().toString());
-		}
+		GetParse getParse = new GetParse();
+		getParse.execute();
+		
+		
 		
 		if (savedInstanceState == null) {
 			getFragmentManager().beginTransaction()
@@ -41,7 +43,25 @@ Context mContext;
 		}
 	}
 	
-	public void signUpAccount(String userName, String password, String email){
+	public class GetParse extends AsyncTask<Void, Void, Void> {
+
+		@Override
+		protected Void doInBackground(Void... params) {
+			// TODO Auto-generated method stub
+			Parse.initialize(mContext,"CdeHn8mEBCyXEyUSXakxslroJJ7s3rhssAatCooS", "4rUjsJqJamYFQdOyZ9J3eegMdJRXMkOMlwVL8YZV");
+			ParseUser current = ParseUser.getCurrentUser();
+			if(current != null){
+				Log.i("Current", current.getUsername().toString());
+				Intent intent = new Intent(mContext, ListActivity.class);
+				startActivity(intent);
+			}
+		return null;
+			
+		}
+		
+	}
+	
+	public void signUpAccount(final String userName, final String password, String email){
 		ParseUser newUser = new ParseUser();
 		newUser.setUsername(userName);
 		newUser.setPassword(password);
@@ -49,21 +69,37 @@ Context mContext;
 		newUser.signUpInBackground(new SignUpCallback() {
 			
 			@Override
-			public void done(ParseException arg0) {
+			public void done(ParseException e) {
 				// TODO Auto-generated method stub
-				if(arg0 == null){
-					
+				if(e == null){
+					loginAccount(userName, password);
 				}else{
-					if(arg0.getCode() == ParseException.USERNAME_TAKEN){
-						Toast.makeText(mContext, arg0.getMessage(), Toast.LENGTH_LONG).show();
-					}else if(arg0.getCode() == ParseException.EMAIL_TAKEN){
-						Toast.makeText(mContext, arg0.getMessage(), Toast.LENGTH_LONG).show();
+					if(e.getCode() == ParseException.USERNAME_TAKEN){
+						Toast.makeText(mContext, e.getMessage(), Toast.LENGTH_LONG).show();
+					}else if(e.getCode() == ParseException.EMAIL_TAKEN){
+						Toast.makeText(mContext, e.getMessage(), Toast.LENGTH_LONG).show();
 					}
 				}
 			}
 		});
 	}
 
+	public void loginAccount(String userName, String password){
+		ParseUser.logInInBackground(userName, password, new LogInCallback() {
+			
+			@Override
+			public void done(ParseUser user, ParseException e) {
+				// TODO Auto-generated method stub
+				if(user != null){
+					Intent intent = new Intent(mContext, ListActivity.class);
+					startActivity(intent);
+				}else{
+					Toast.makeText(mContext, e.getMessage(), Toast.LENGTH_LONG).show();
+				}
+			}
+		});
+	}
+	
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
 
@@ -115,6 +151,26 @@ Context mContext;
 			emailInput = (EditText) rootView.findViewById(R.id.emailInput);
 			userInput = (EditText) rootView.findViewById(R.id.userInput);
 			passwordInput = (EditText) rootView.findViewById(R.id.passwordInput);
+			
+			loginButton.setOnClickListener(new OnClickListener() {
+				
+				@Override
+				public void onClick(View v) {
+					// TODO Auto-generated method stub
+					Boolean validate = true;
+					if(userInput.getText().length() == 0){
+						userInput.setError("Username is required!");
+						validate = false;
+					}
+					if(passwordInput.getText().length() == 0){
+						passwordInput.setError("Password is required!");
+						validate = false;
+					}
+					if(validate == true){
+						activity.loginAccount(userInput.getText().toString(), passwordInput.getText().toString());
+					}
+				}
+			});
 			
 			signupButton.setOnClickListener(new OnClickListener() {
 				
