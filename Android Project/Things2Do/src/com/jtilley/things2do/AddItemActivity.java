@@ -1,4 +1,7 @@
 package com.jtilley.things2do;
+//Justin Tilley
+//CPMD 
+//Project 1
 
 import java.util.Calendar;
 
@@ -10,6 +13,7 @@ import android.app.DatePickerDialog.OnDateSetListener;
 import android.app.Dialog;
 import android.app.DialogFragment;
 import android.app.Fragment;
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -67,10 +71,21 @@ DialogFragment dateDialog;
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
+		}else if(id == R.id.action_logout){
+			logoutUser();
 		}
 		return super.onOptionsItemSelected(item);
 	}
 	
+	//LogOut User and navigate back to Login
+	public void logoutUser(){
+		ParseUser.logOut();
+		Intent intent = new Intent(this, MainActivity.class);
+		intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+		startActivity(intent);
+	}
+	
+	//Save Item and link to Current User
 	public void saveItem(String name, String date, int time) throws JSONException{
 		ParseUser current = ParseUser.getCurrentUser();
 		ParseObject task = new ParseObject("Task");
@@ -84,6 +99,7 @@ DialogFragment dateDialog;
 		finish();
 	}
 	
+	//Display DialogFragment for Date Input
 	public class DateDialog extends DialogFragment implements OnDateSetListener{
 
 		@Override
@@ -105,6 +121,7 @@ DialogFragment dateDialog;
 		
 	}
 	
+	//Open DateDialog when Date Input is selected
 	public void displayDateDialog(Boolean focus){
 		if(focus){
 			dateDialog = new DateDialog();
@@ -146,11 +163,13 @@ DialogFragment dateDialog;
 			return rootView;
 		}
 		
+		//Set selected Date to input
 		public void setDateInput(int year, int month, int day){
 			date = month + "/" + day + "/" + year;
 			dateInput.setText(date);
 			getView().clearFocus();
 		}
+		//Validate and call saveItem
 		public void getInputs() throws NumberFormatException, JSONException{
 			Boolean validate = true;
 			if(taskInput.getText().length() == 0){

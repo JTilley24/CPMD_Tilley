@@ -14,14 +14,21 @@
         android:layout_height="wrap_content"
         android:layout_alignParentTop="true"
         android:layout_centerHorizontal="true"
+        android:textSize="30sp"
         android:text="@string/login_title" />
-
+	
+    <RelativeLayout 
+        android:background="@android:drawable/dialog_holo_light_frame"
+      	android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerInParent="true"
+        android:layout_below="@+id/loginTitle"
+        android:padding="30dp">
     <TextView
         android:id="@+id/usernameTitle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignParentLeft="true"
-        android:layout_below="@+id/loginTitle"
         android:layout_marginTop="16dp"
         android:text="@string/user_title" />
 
@@ -29,7 +36,7 @@
         android:id="@+id/userInput"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_alignLeft="@+id/usernameTitle"
+        android:layout_centerVertical="true"
         android:layout_below="@+id/usernameTitle"
         android:ems="10"
         android:inputType="text" >
@@ -50,7 +57,7 @@
         android:id="@+id/passwordInput"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_alignLeft="@+id/passwordTitle"
+        android:layout_centerVertical="true"
         android:layout_below="@+id/passwordTitle"
         android:ems="10" 
         android:inputType="textPassword"/>
@@ -69,7 +76,7 @@
         android:id="@+id/emailInput"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_alignLeft="@+id/emailTitle"
+        android:gravity="center_vertical"
         android:layout_below="@+id/emailTitle"
         android:ems="10"
         android:inputType="textEmailAddress"
@@ -77,7 +84,7 @@
 
     <Button
         android:id="@+id/loginButton"
-        android:layout_width="wrap_content"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_below="@+id/emailInput"
         android:layout_centerHorizontal="true"
@@ -86,7 +93,7 @@
 
     <Button
         android:id="@+id/signupButton"
-        android:layout_width="wrap_content"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_below="@+id/loginButton"
         android:layout_centerHorizontal="true"
@@ -95,6 +102,7 @@
 
     <Button
         android:id="@+id/cancelSignButton"
+        android:background="@android:color/transparent"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_below="@+id/signupButton"
@@ -102,6 +110,8 @@
         android:layout_marginTop="10dp"
         android:fitsSystemWindows="true"
         android:text="@string/cancel"
+        android:textSize="12sp"
         android:visibility="gone" />
+    </RelativeLayout>
 
 </RelativeLayout>

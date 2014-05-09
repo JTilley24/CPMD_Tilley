@@ -1,12 +1,13 @@
 package com.jtilley.things2do;
+//Justin Tilley
+//CPMD 
+//Project 1
 
 import android.app.Activity;
 import android.app.Fragment;
 import android.content.Context;
 import android.content.Intent;
-import android.os.AsyncTask;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -19,48 +20,27 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.parse.LogInCallback;
-import com.parse.Parse;
 import com.parse.ParseException;
 import com.parse.ParseUser;
 import com.parse.SignUpCallback;
 
 public class MainActivity extends Activity {
 Context mContext;
+PlaceholderFragment frag;
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
-		super.onCreate(savedInstanceState);
-		setContentView(R.layout.activity_main);
+		super.onCreate(savedInstanceState);		
 		mContext = this;
-		
-		GetParse getParse = new GetParse();
-		getParse.execute();
-		
-		
-		
-		if (savedInstanceState == null) {
-			getFragmentManager().beginTransaction()
-					.add(R.id.container, new PlaceholderFragment(this)).commit();
-		}
-	}
-	
-	public class GetParse extends AsyncTask<Void, Void, Void> {
 
-		@Override
-		protected Void doInBackground(Void... params) {
-			// TODO Auto-generated method stub
-			Parse.initialize(mContext,"CdeHn8mEBCyXEyUSXakxslroJJ7s3rhssAatCooS", "4rUjsJqJamYFQdOyZ9J3eegMdJRXMkOMlwVL8YZV");
-			ParseUser current = ParseUser.getCurrentUser();
-			if(current != null){
-				Log.i("Current", current.getUsername().toString());
-				Intent intent = new Intent(mContext, ListActivity.class);
-				startActivity(intent);
-			}
-		return null;
-			
+		setContentView(R.layout.activity_main);
+		if (savedInstanceState == null) {
+			frag = new PlaceholderFragment(this);
+			getFragmentManager().beginTransaction()
+					.add(R.id.container, frag).commit();
 		}
-		
 	}
-	
+		
+	//Sign up new User based on input
 	public void signUpAccount(final String userName, final String password, String email){
 		ParseUser newUser = new ParseUser();
 		newUser.setUsername(userName);
@@ -75,15 +55,20 @@ Context mContext;
 					loginAccount(userName, password);
 				}else{
 					if(e.getCode() == ParseException.USERNAME_TAKEN){
-						Toast.makeText(mContext, e.getMessage(), Toast.LENGTH_LONG).show();
+						frag.setError("user");
 					}else if(e.getCode() == ParseException.EMAIL_TAKEN){
-						Toast.makeText(mContext, e.getMessage(), Toast.LENGTH_LONG).show();
+						frag.setError("email taken");
+					}else if(e.getCode() == ParseException.INVALID_EMAIL_ADDRESS){
+						frag.setError("email invalid");
+					}else{
+						Toast.makeText(mContext, e.getCode(), Toast.LENGTH_LONG).show();
 					}
 				}
 			}
 		});
 	}
 
+	//Login User and navigate to List Activity
 	public void loginAccount(String userName, String password){
 		ParseUser.logInInBackground(userName, password, new LogInCallback() {
 			
@@ -92,6 +77,7 @@ Context mContext;
 				// TODO Auto-generated method stub
 				if(user != null){
 					Intent intent = new Intent(mContext, ListActivity.class);
+					intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
 					startActivity(intent);
 				}else{
 					Toast.makeText(mContext, e.getMessage(), Toast.LENGTH_LONG).show();
@@ -152,6 +138,7 @@ Context mContext;
 			userInput = (EditText) rootView.findViewById(R.id.userInput);
 			passwordInput = (EditText) rootView.findViewById(R.id.passwordInput);
 			
+			//Validate LogIn form and call loginAccount
 			loginButton.setOnClickListener(new OnClickListener() {
 				
 				@Override
@@ -172,11 +159,13 @@ Context mContext;
 				}
 			});
 			
+			//Change UI to SignUp form, validate and call signUpAccount
 			signupButton.setOnClickListener(new OnClickListener() {
 				
 				@Override
 				public void onClick(View v) {
 					// TODO Auto-generated method stub
+					//Check if UI is already changed
 					if(signUp == false){
 						loginButton.setVisibility(View.GONE);
 						cancelButton.setVisibility(View.VISIBLE);
@@ -206,6 +195,7 @@ Context mContext;
 				}
 			});
 			
+			//Change UI back to Login
 			cancelButton.setOnClickListener(new OnClickListener() {
 				
 				@Override
@@ -217,9 +207,21 @@ Context mContext;
 					emailInput.setVisibility(View.GONE);
 					userInput.setText("");
 					passwordInput.setText("");
+					signUp = false;
 				}
 			});
 			return rootView;
+		}
+		
+		//Set errors to inputs from Parse
+		public void setError(String error){
+			if(error.equalsIgnoreCase("user")){
+				userInput.setError("Username is already taken.");
+			}else if(error.equalsIgnoreCase("email invalid")){
+				emailInput.setError("Email is invalid");
+			}else if(error.equalsIgnoreCase("email taken")){
+				emailInput.setError("Email is already taken");
+			}
 		}
 	}
 

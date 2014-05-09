@@ -1,4 +1,7 @@
 package com.jtilley.things2do;
+//Justin Tilley
+//CPMD 
+//Project 1
 
 import java.util.List;
 
@@ -19,9 +22,9 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ListView;
+import android.widget.TextView;
 
 public class ListActivity extends Activity {
-List<ParseObject> tasksParse;
 PlaceholderFragment frag;
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -39,6 +42,7 @@ PlaceholderFragment frag;
 	protected void onResume() {
 		// TODO Auto-generated method stub
 		super.onResume();
+		//Get and Display Current User Data
 		ParseUser current = ParseUser.getCurrentUser();
 		if(current != null){
 			Log.i("USER", current.toString());
@@ -47,6 +51,7 @@ PlaceholderFragment frag;
 		}
 	}
 	
+	//Get List of Tasks linked to Current User
 	public void getList(){
 		ParseQuery<ParseObject> query = ParseQuery.getQuery("Task");
 		query.whereEqualTo("User", ParseUser.getCurrentUser());
@@ -56,25 +61,22 @@ PlaceholderFragment frag;
 			public void done(List<ParseObject> list, ParseException e) {
 				// TODO Auto-generated method stub
 				if(e == null){
-					tasksParse = list;
-					frag.displayList(tasksParse);
-				}else{
-					
+					frag.displayList(list);
 				}
 			}
 		});
 	}
 	
+	//LogOut Current User and navigate to Login
 	public void logoutUser(){
 		ParseUser.logOut();
 		Intent intent = new Intent(this, MainActivity.class);
-		intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
+		intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
 		startActivity(intent);
 	}
 	
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
-
 		// Inflate the menu; this adds items to the action bar if it is present.
 		getMenuInflater().inflate(R.menu.list, menu);
 		return true;
@@ -102,6 +104,7 @@ PlaceholderFragment frag;
 	 */
 	public static class PlaceholderFragment extends Fragment {
 	ListView taskList;
+	TextView noDataText;
 	ListActivity activity;
 		public PlaceholderFragment(ListActivity act) {
 			activity = act;
@@ -113,12 +116,19 @@ PlaceholderFragment frag;
 			View rootView = inflater.inflate(R.layout.fragment_list, container,
 					false);
 			taskList = (ListView) rootView.findViewById(R.id.taskList);
+			noDataText = (TextView) rootView.findViewById(R.id.noDataText);
 			
 			return rootView;
 		}
+		//Display List of Task
 		public void displayList(List<ParseObject> list){
-			if(list != null){
+			if(list.size() != 0){
+				noDataText.setVisibility(View.GONE);
+				taskList.setVisibility(View.VISIBLE);
 				taskList.setAdapter(new TasksListAdapter(activity, list));
+			}else{
+				taskList.setVisibility(View.GONE);
+				noDataText.setVisibility(View.VISIBLE);
 			}
 		}
 	}

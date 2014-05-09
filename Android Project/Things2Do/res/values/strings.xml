@@ -2,6 +2,7 @@
 <resources>
 
     <string name="app_name">Things2Do</string>
+    <string name="title_activity_main">Login</string>
     <string name="login_title">Login</string>
     <string name="user_title">Username:</string>
     <string name="password_title">Password:</string>
@@ -17,5 +18,7 @@
     <string name="task_name">Task:</string>
     <string name="date_title">Date:</string>
     <string name="time_title">Estimated Hours:</string>
+    <string name="title_activity_launch">LaunchActivity</string>
+    <string name="no_data">No Saved Task!</string>
 
 </resources>

@@ -18,12 +18,7 @@
         android:theme="@style/AppTheme" >
         <activity
             android:name="com.jtilley.things2do.MainActivity"
-            android:label="@string/app_name" >
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
+            android:label="@string/title_activity_main" >
         </activity>
         <activity
             android:name="com.jtilley.things2do.ListActivity"
@@ -32,6 +27,15 @@
         <activity
             android:name="com.jtilley.things2do.AddItemActivity"
             android:label="@string/title_activity_add_item" >
+        </activity>
+        <activity
+            android:name="com.jtilley.things2do.LaunchActivity"
+            android:label="@string/app_name" >
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
         </activity>
     </application>
 

@@ -1,4 +1,7 @@
 package com.jtilley.things2do;
+//Justin Tilley
+//CPMD 
+//Project 1
 
 import java.util.ArrayList;
 import java.util.List;
@@ -54,7 +57,7 @@ private static LayoutInflater inflater = null;
 		TextView taskName = (TextView) view.findViewById(R.id.taskName);
 		TextView taskTime = (TextView) view.findViewById(R.id.taskTime);
 		TextView taskDate = (TextView) view.findViewById(R.id.taskDate);
-		
+		//Set ParseObject data to each row
 		ParseObject object = taskList.get(position);
 		ArrayList<String> name = (ArrayList<String>) object.get("Name");
 		ArrayList<String> date = (ArrayList<String>) object.get("Date");
