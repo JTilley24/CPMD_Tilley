@@ -14,10 +14,13 @@
     <string name="title_activity_list">ListActivity</string>
     <string name="action_add">Add</string>
     <string name="action_logout">Logout</string>
-    <string name="title_activity_add_item">AddItemActivity</string>
+    <string name="title_activity_add_item">Add Item</string>
     <string name="task_name">Task:</string>
+    <string name="task_hint">Name of Task</string>
     <string name="date_title">Date:</string>
+    <string name="date_hint">Date to Complete</string>
     <string name="time_title">Estimated Hours:</string>
+    <string name="time_hint">Number of Hours</string>
     <string name="title_activity_launch">LaunchActivity</string>
     <string name="no_data">No Saved Task!</string>
 

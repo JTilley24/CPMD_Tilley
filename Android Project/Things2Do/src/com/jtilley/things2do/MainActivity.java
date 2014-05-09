@@ -189,7 +189,6 @@ PlaceholderFragment frag;
 						}
 						if(validate == true){
 							activity.signUpAccount(userInput.getText().toString(), passwordInput.getText().toString(), emailInput.getText().toString());
-							signUp = false;
 						}
 					}
 				}

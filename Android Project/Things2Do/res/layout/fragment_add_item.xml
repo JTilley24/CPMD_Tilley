@@ -25,6 +25,7 @@
         android:layout_alignLeft="@+id/taskName"
         android:layout_below="@+id/taskName"
         android:ems="10"
+        android:hint="@string/task_hint"
         android:inputType="text" >
 
         <requestFocus />
@@ -40,13 +41,14 @@
         android:text="@string/date_title" />
 
 	<EditText
-        android:id="@+id/dateInput"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignLeft="@+id/dateTitle"
-        android:layout_below="@+id/dateTitle"
-        android:ems="10"
-        android:inputType="date" />    
+	    android:id="@+id/dateInput"
+	    android:layout_width="wrap_content"
+	    android:layout_height="wrap_content"
+	    android:layout_alignLeft="@+id/dateTitle"
+	    android:layout_below="@+id/dateTitle"
+	    android:ems="10"
+	    android:hint="@string/date_hint"
+	    android:inputType="date" />
     
     <TextView
         android:id="@+id/timeTitle"
@@ -64,8 +66,7 @@
         android:layout_alignLeft="@+id/timeTitle"
         android:layout_below="@+id/timeTitle"
         android:ems="10"
+        android:hint="@string/time_hint"
         android:inputType="number" />
-
-    
 
 </RelativeLayout>
