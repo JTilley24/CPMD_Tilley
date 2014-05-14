@@ -239,6 +239,16 @@ public String objectId;
 			dateInput.setText(date);
 			getView().clearFocus();
 		}
+		
+		//Range Validation for Time input
+		public Boolean timeValidate(int time){
+			if(time < 24 && time > 1){
+				return true;
+			}else{
+				return false;
+			}
+		}
+		
 		//Validate and call saveItem
 		public void getInputs() throws NumberFormatException{
 			Boolean validate = true;
@@ -252,6 +262,11 @@ public String objectId;
 			}
 			if(timeInput.getText().length() == 0){
 				timeInput.setError("Estimated Hours is required!");
+				validate = false;
+			}
+			int time = Integer.valueOf(timeInput.getText().toString());
+			if(!timeValidate(time)){
+				timeInput.setError("Hours must be between 1 and 24");
 				validate = false;
 			}
 			if(validate == true){

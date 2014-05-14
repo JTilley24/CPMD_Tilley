@@ -3,6 +3,9 @@ package com.jtilley.things2do;
 //CPMD 
 //Project 1
 
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import android.app.Activity;
 import android.app.Fragment;
 import android.content.Context;
@@ -191,6 +194,10 @@ PlaceholderFragment frag;
 							emailInput.setError("Email is required!");
 							validate = false;
 						}
+						if(!passwordValidate(passwordInput.getText().toString())){
+							passwordInput.setError("Password must be 6 - 20 characters and must contain one letter and number");
+							validate = false;
+						}
 						if(validate == true){
 							activity.signUpAccount(userInput.getText().toString(), passwordInput.getText().toString(), emailInput.getText().toString());
 						}
@@ -214,6 +221,14 @@ PlaceholderFragment frag;
 				}
 			});
 			return rootView;
+		}
+		
+		//Pattern Validation for Password input
+		public Boolean passwordValidate(final String password){
+			Pattern pattern = Pattern.compile("((?=.*\\d)(?=.*[a-z]).{6,20})");
+			Matcher matcher;
+			matcher = pattern.matcher(password);
+			return matcher.matches();
 		}
 		
 		//Set errors to inputs from Parse
