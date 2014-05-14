@@ -5,6 +5,7 @@ package com.jtilley.things2do;
 
 import java.util.List;
 
+import com.parse.DeleteCallback;
 import com.parse.FindCallback;
 import com.parse.ParseException;
 import com.parse.ParseObject;
@@ -16,11 +17,15 @@ import android.app.Fragment;
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.ContextMenu;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.ContextMenu.ContextMenuInfo;
+import android.view.View.OnCreateContextMenuListener;
 import android.view.ViewGroup;
+import android.widget.AdapterView.AdapterContextMenuInfo;
 import android.widget.ListView;
 import android.widget.TextView;
 
@@ -29,12 +34,16 @@ PlaceholderFragment frag;
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
+		
 		setContentView(R.layout.activity_list);
 
 		if (savedInstanceState == null) {
 			frag = new PlaceholderFragment(this);
+			frag.setRetainInstance(true);
 			getFragmentManager().beginTransaction()
-					.add(R.id.container, frag).commit();
+					.add(R.id.container, frag, "list_frag").commit();
+		}else{
+			frag = (PlaceholderFragment) getFragmentManager().findFragmentByTag("list_frag");
 		}
 	}
 
@@ -72,6 +81,15 @@ PlaceholderFragment frag;
 		ParseUser.logOut();
 		Intent intent = new Intent(this, MainActivity.class);
 		intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+		startActivity(intent);
+	}
+	
+	public void displayAddItem(String name, String date, int time, String objectid){
+		Intent intent = new Intent(this, AddItemActivity.class);
+		intent.putExtra("name", name);
+		intent.putExtra("date", date);
+		intent.putExtra("time", time);
+		intent.putExtra("objectid", objectid);
 		startActivity(intent);
 	}
 	
@@ -117,19 +135,60 @@ PlaceholderFragment frag;
 					false);
 			taskList = (ListView) rootView.findViewById(R.id.taskList);
 			noDataText = (TextView) rootView.findViewById(R.id.noDataText);
-			
+			taskList.setOnCreateContextMenuListener(new OnCreateContextMenuListener() {
+				 
+				@Override
+				public void onCreateContextMenu(ContextMenu menu, View v,
+						ContextMenuInfo menuInfo) {
+					// TODO Auto-generated method stub
+				
+					menu.add(0, 1, 0, "EDIT");
+					menu.add(0, 2, 1, "DELETE");
+				}
+			});
 			return rootView;
 		}
+		
+		
+		
 		//Display List of Task
 		public void displayList(List<ParseObject> list){
 			if(list.size() != 0){
 				noDataText.setVisibility(View.GONE);
 				taskList.setVisibility(View.VISIBLE);
 				taskList.setAdapter(new TasksListAdapter(activity, list));
+				
 			}else{
 				taskList.setVisibility(View.GONE);
 				noDataText.setVisibility(View.VISIBLE);
 			}
+		}
+
+		
+		@Override
+		public boolean onContextItemSelected(MenuItem item) {
+			// TODO Auto-generated method stub
+			AdapterContextMenuInfo menuInfo = (AdapterContextMenuInfo) item.getMenuInfo();
+			ParseObject temp = (ParseObject) taskList.getAdapter().getItem(menuInfo.position);
+			
+			if(item.getItemId() == 1){
+				String name = (String) temp.get("Name");
+				String date = (String) temp.get("Date");
+				int time = Integer.valueOf(temp.get("Time").toString());
+				activity.displayAddItem(name, date, time, temp.getObjectId().toString());
+			}else if(item.getItemId() == 2){
+				temp.deleteInBackground(new DeleteCallback() {
+					
+					@Override
+					public void done(ParseException arg0) {
+						// TODO Auto-generated method stub
+						activity.getList();
+					}
+				});
+				
+			}
+			
+			return super.onContextItemSelected(item);
 		}
 	}
 }

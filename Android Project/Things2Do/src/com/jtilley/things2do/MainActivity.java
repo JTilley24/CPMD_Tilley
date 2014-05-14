@@ -35,9 +35,13 @@ PlaceholderFragment frag;
 		setContentView(R.layout.activity_main);
 		if (savedInstanceState == null) {
 			frag = new PlaceholderFragment(this);
+			frag.setRetainInstance(true);
 			getFragmentManager().beginTransaction()
-					.add(R.id.container, frag).commit();
+					.add(R.id.container, frag, "login_frag").commit();
+		}else{
+			frag = (PlaceholderFragment) getFragmentManager().findFragmentByTag("login_frag");
 		}
+		
 	}
 		
 	//Sign up new User based on input

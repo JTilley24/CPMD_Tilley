@@ -3,7 +3,6 @@ package com.jtilley.things2do;
 //CPMD 
 //Project 1
 
-import java.util.ArrayList;
 import java.util.List;
 
 import com.parse.ParseObject;
@@ -36,7 +35,7 @@ private static LayoutInflater inflater = null;
 	@Override
 	public Object getItem(int position) {
 		// TODO Auto-generated method stub
-		return position;
+		return taskList.get(position);
 	}
 
 	@Override
@@ -45,7 +44,7 @@ private static LayoutInflater inflater = null;
 		return position;
 	}
 
-	@SuppressWarnings("unchecked")
+	
 	@Override
 	public View getView(int position, View convertView, ViewGroup parent) {
 		// TODO Auto-generated method stub
@@ -59,12 +58,12 @@ private static LayoutInflater inflater = null;
 		TextView taskDate = (TextView) view.findViewById(R.id.taskDate);
 		//Set ParseObject data to each row
 		ParseObject object = taskList.get(position);
-		ArrayList<String> name = (ArrayList<String>) object.get("Name");
-		ArrayList<String> date = (ArrayList<String>) object.get("Date");
-		ArrayList<Integer> time = (ArrayList<Integer>) object.get("Time");
-		taskName.setText(name.get(0).toString());
-		taskDate.setText("Date:\n " + date.get(0).toString());
-		taskTime.setText("Hours: " + time.get(0).toString());
+		String name = (String) object.get("Name");
+		String date = (String) object.get("Date");
+		int time = Integer.valueOf(object.get("Time").toString());
+		taskName.setText(name);
+		taskDate.setText("Date:\n " + date);
+		taskTime.setText("Hours: " + time);
 		
 		return view;
 	}

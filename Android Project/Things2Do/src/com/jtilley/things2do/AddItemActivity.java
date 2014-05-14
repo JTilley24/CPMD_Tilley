@@ -5,14 +5,11 @@ package com.jtilley.things2do;
 
 import java.util.Calendar;
 
-import org.json.JSONException;
-
 import android.app.Activity;
 import android.app.DatePickerDialog;
 import android.app.DatePickerDialog.OnDateSetListener;
-import android.app.Dialog;
-import android.app.DialogFragment;
 import android.app.Fragment;
+import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.LayoutInflater;
@@ -24,24 +21,42 @@ import android.view.ViewGroup;
 import android.widget.DatePicker;
 import android.widget.EditText;
 
+import com.parse.GetCallback;
 import com.parse.ParseACL;
+import com.parse.ParseException;
 import com.parse.ParseObject;
+import com.parse.ParseQuery;
 import com.parse.ParseUser;
+import com.parse.SaveCallback;
 
 public class AddItemActivity extends Activity {
 PlaceholderFragment frag;
-DialogFragment dateDialog;
+DateDialog dateDialog;
+public String objectName;
+public String objectDate;
+public int objectTime;
+public String objectId;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_add_item);
 		
-		frag = new PlaceholderFragment(this);
+		Intent intent = this.getIntent();
+		objectName = intent.getStringExtra("name");
+		objectDate = intent.getStringExtra("date");
+		objectTime = intent.getIntExtra("time", 0);
+		objectId = intent.getStringExtra("objectid");
+		
+		
 		
 		if (savedInstanceState == null) {
+			frag = new PlaceholderFragment(this);
+			frag.setRetainInstance(true);
 			getFragmentManager().beginTransaction()
-					.add(R.id.container, frag).commit();
+					.add(R.id.container, frag, "add_frag").commit();
+		}else{
+			frag = (PlaceholderFragment) getFragmentManager().findFragmentByTag("add_frag");
 		}
 	}
 
@@ -67,14 +82,15 @@ DialogFragment dateDialog;
 			} catch (NumberFormatException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
-			} catch (JSONException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
 			}
 		}else if(id == R.id.action_logout){
 			logoutUser();
 		}
 		return super.onOptionsItemSelected(item);
+	}
+	
+	public void displayEdit(){
+		
 	}
 	
 	//LogOut User and navigate back to Login
@@ -86,46 +102,86 @@ DialogFragment dateDialog;
 	}
 	
 	//Save Item and link to Current User
-	public void saveItem(String name, String date, int time) throws JSONException{
-		ParseUser current = ParseUser.getCurrentUser();
-		ParseObject task = new ParseObject("Task");
+	public void saveItem(final String name, final String date, final int time){
+		if(objectId != null){
+			ParseQuery<ParseObject> query = ParseQuery.getQuery("Task");
+			query.getInBackground(objectId, new GetCallback<ParseObject>() {
+				
+				@Override
+				public void done(ParseObject task, com.parse.ParseException e) {
+					// TODO Auto-generated method stub
+					if(e == null){
+						task.put("Name", name);
+						task.put("Date", date);
+						task.put("Time", time);
+						task.saveInBackground(new SaveCallback() {
+							
+							@Override
+							public void done(ParseException arg0) {
+								// TODO Auto-generated method stub
+								finish();
+							}
+						});
+					}
+				}
+			} );
+			
+		}else{
+			ParseUser current = ParseUser.getCurrentUser();
+			ParseObject task = new ParseObject("Task");
+			
+			task.put("Name", name);
+			task.put("Date", date);
+			task.put("Time", time);
+			task.setACL(new ParseACL(current));
+			task.put("User", current);
+			task.saveInBackground(new SaveCallback() {
+				
+				@Override
+				public void done(ParseException arg0) {
+					// TODO Auto-generated method stub
+					finish();
+				}
+			});
+		}
 		
-		task.add("Name", name);
-		task.add("Date", date);
-		task.add("Time", time);
-		task.setACL(new ParseACL(current));
-		task.add("User", current);
-		task.saveInBackground();
-		finish();
+		
 	}
 	
 	//Display DialogFragment for Date Input
-	public class DateDialog extends DialogFragment implements OnDateSetListener{
+	public class DateDialog extends DatePickerDialog{
 
-		@Override
-		public Dialog onCreateDialog(Bundle savedInstanceState) {
-			// TODO Auto-generated method stub
-			Calendar calendar = Calendar.getInstance();
-			int year = calendar.get(Calendar.YEAR);
-			int month = calendar.get(Calendar.MONTH);
-			int day = calendar.get(Calendar.DAY_OF_MONTH);
-			return new DatePickerDialog(getActivity(), this, year, month, day);
-		}
-
-		@Override
-		public void onDateSet(DatePicker view, int year, int monthOfYear,
+		public DateDialog(Context context,
+				OnDateSetListener callBack, int year, int monthOfYear,
 				int dayOfMonth) {
-			// TODO Auto-generated method stub
-			frag.setDateInput(year, monthOfYear, dayOfMonth);
+			
+			super(context, callBack, year, monthOfYear, dayOfMonth);
+			// TODO Auto-generated constructor stub
 		}
-		
 	}
 	
 	//Open DateDialog when Date Input is selected
 	public void displayDateDialog(Boolean focus){
 		if(focus){
-			dateDialog = new DateDialog();
-			dateDialog.show(getFragmentManager(), "DateDialog");
+			Calendar cal = Calendar.getInstance();
+			if(objectDate != null){
+				String[] dateString = objectDate.split("/");
+				cal.set(Calendar.YEAR, Integer.valueOf(dateString[2]));
+				cal.set(Calendar.MONTH, Integer.valueOf(dateString[0]));
+				cal.set(Calendar.DAY_OF_MONTH, Integer.valueOf(dateString[1]));
+			}
+			
+			dateDialog = new DateDialog(this, new OnDateSetListener() {
+				
+				@Override
+				public void onDateSet(DatePicker view, int year, int monthOfYear,
+						int dayOfMonth) {
+					// TODO Auto-generated method stub
+					frag.setDateInput(year, monthOfYear, dayOfMonth);
+				}
+			}, cal.get(Calendar.YEAR), cal.get(Calendar.MONTH), cal.get(Calendar.DAY_OF_MONTH));
+			
+			dateDialog.show();
 		}else{
 			dateDialog.dismiss();
 		}
@@ -149,6 +205,7 @@ DialogFragment dateDialog;
 				Bundle savedInstanceState) {
 			View rootView = inflater.inflate(R.layout.fragment_add_item,
 					container, false);
+		
 			taskInput = (EditText) rootView.findViewById(R.id.taskNameInput);
 			dateInput = (EditText) rootView.findViewById(R.id.dateInput);
 			dateInput.setOnFocusChangeListener(new OnFocusChangeListener() {
@@ -156,11 +213,24 @@ DialogFragment dateDialog;
 				@Override
 				public void onFocusChange(View v, boolean hasFocus) {
 					// TODO Auto-generated method stub
-					activity.displayDateDialog(hasFocus);
+					
+						activity.displayDateDialog(hasFocus);
+					
 				}
 			});
 			timeInput = (EditText) rootView.findViewById(R.id.timeInput);
+			
+			if(activity.objectName != null){
+				displayEdit(activity.objectName, activity.objectDate, activity.objectTime);
+			}
+			
 			return rootView;
+		}
+		
+		public void displayEdit(String name, String date, int time){
+			taskInput.setText(name);
+			dateInput.setText(date);
+			timeInput.setText(String.valueOf(time));
 		}
 		
 		//Set selected Date to input
@@ -170,7 +240,7 @@ DialogFragment dateDialog;
 			getView().clearFocus();
 		}
 		//Validate and call saveItem
-		public void getInputs() throws NumberFormatException, JSONException{
+		public void getInputs() throws NumberFormatException{
 			Boolean validate = true;
 			if(taskInput.getText().length() == 0){
 				taskInput.setError("Task is required!");
