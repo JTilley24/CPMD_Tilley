@@ -14,7 +14,10 @@ import com.parse.ParseUser;
 
 import android.app.Activity;
 import android.app.Fragment;
+import android.content.Context;
 import android.content.Intent;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.ContextMenu;
@@ -28,12 +31,17 @@ import android.view.ViewGroup;
 import android.widget.AdapterView.AdapterContextMenuInfo;
 import android.widget.ListView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 public class ListActivity extends Activity {
 PlaceholderFragment frag;
+Context mContext;
+
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
+		
+		mContext = this;
 		
 		setContentView(R.layout.activity_list);
 
@@ -56,7 +64,11 @@ PlaceholderFragment frag;
 		if(current != null){
 			Log.i("USER", current.toString());
 			setTitle(current.getUsername() + "'s List");
-			getList();
+			if(checkConnection()){
+				getList();
+			}else{
+				Toast.makeText(mContext, "No connection! Please try again.", Toast.LENGTH_LONG).show();
+			}
 		}
 	}
 	
@@ -74,6 +86,16 @@ PlaceholderFragment frag;
 				}
 			}
 		});
+	}
+	
+	public Boolean checkConnection(){
+		Boolean connected;
+		
+		ConnectivityManager connManager = (ConnectivityManager) mContext.getSystemService(Context.CONNECTIVITY_SERVICE);
+		NetworkInfo network = connManager.getActiveNetworkInfo();
+		connected = network != null && network.isConnectedOrConnecting();
+
+		return connected;
 	}
 	
 	//LogOut Current User and navigate to Login
@@ -141,9 +163,12 @@ PlaceholderFragment frag;
 				public void onCreateContextMenu(ContextMenu menu, View v,
 						ContextMenuInfo menuInfo) {
 					// TODO Auto-generated method stub
-				
-					menu.add(0, 1, 0, "EDIT");
-					menu.add(0, 2, 1, "DELETE");
+					if(activity.checkConnection()){
+						menu.add(0, 1, 0, "EDIT");
+						menu.add(0, 2, 1, "DELETE");
+					}else{
+						Toast.makeText(activity, "No connection! Please try again.", Toast.LENGTH_LONG).show();
+					}
 				}
 			});
 			return rootView;

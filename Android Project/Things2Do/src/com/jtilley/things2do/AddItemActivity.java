@@ -11,6 +11,8 @@ import android.app.DatePickerDialog.OnDateSetListener;
 import android.app.Fragment;
 import android.content.Context;
 import android.content.Intent;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -20,6 +22,7 @@ import android.view.View.OnFocusChangeListener;
 import android.view.ViewGroup;
 import android.widget.DatePicker;
 import android.widget.EditText;
+import android.widget.Toast;
 
 import com.parse.GetCallback;
 import com.parse.ParseACL;
@@ -31,6 +34,7 @@ import com.parse.SaveCallback;
 
 public class AddItemActivity extends Activity {
 PlaceholderFragment frag;
+Context mContext;
 DateDialog dateDialog;
 public String objectName;
 public String objectDate;
@@ -41,6 +45,8 @@ public String objectId;
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_add_item);
+		
+		mContext = this;
 		
 		Intent intent = this.getIntent();
 		objectName = intent.getStringExtra("name");
@@ -89,8 +95,14 @@ public String objectId;
 		return super.onOptionsItemSelected(item);
 	}
 	
-	public void displayEdit(){
+	public Boolean checkConnection(){
+		Boolean connected;
 		
+		ConnectivityManager connManager = (ConnectivityManager) mContext.getSystemService(Context.CONNECTIVITY_SERVICE);
+		NetworkInfo network = connManager.getActiveNetworkInfo();
+		connected = network != null && network.isConnectedOrConnecting();
+
+		return connected;
 	}
 	
 	//LogOut User and navigate back to Login
@@ -144,8 +156,6 @@ public String objectId;
 				}
 			});
 		}
-		
-		
 	}
 	
 	//Display DialogFragment for Date Input
@@ -180,6 +190,8 @@ public String objectId;
 					frag.setDateInput(year, monthOfYear, dayOfMonth);
 				}
 			}, cal.get(Calendar.YEAR), cal.get(Calendar.MONTH), cal.get(Calendar.DAY_OF_MONTH));
+			
+			dateDialog.getDatePicker().setMinDate(cal.getTimeInMillis());
 			
 			dateDialog.show();
 		}else{
@@ -270,7 +282,11 @@ public String objectId;
 				validate = false;
 			}
 			if(validate == true){
-				activity.saveItem(taskInput.getText().toString(), date, Integer.valueOf(timeInput.getText().toString()));
+				if(activity.checkConnection()){
+					activity.saveItem(taskInput.getText().toString(), dateInput.getText().toString(), Integer.valueOf(timeInput.getText().toString()));
+				}else{
+					Toast.makeText(activity, "No Connection! Please try again.", Toast.LENGTH_LONG).show();
+				}
 			}
 		}
 	}

@@ -145,6 +145,7 @@ PlaceholderFragment frag;
 			userInput = (EditText) rootView.findViewById(R.id.userInput);
 			passwordInput = (EditText) rootView.findViewById(R.id.passwordInput);
 			
+			
 			//Validate LogIn form and call loginAccount
 			loginButton.setOnClickListener(new OnClickListener() {
 				
