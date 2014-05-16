@@ -1,7 +1,7 @@
 package com.jtilley.things2do;
 //Justin Tilley
 //CPMD 
-//Project 1
+//Project 2
 
 import java.util.Calendar;
 
@@ -95,6 +95,7 @@ public String objectId;
 		return super.onOptionsItemSelected(item);
 	}
 	
+	//Check for Network Connection
 	public Boolean checkConnection(){
 		Boolean connected;
 		
@@ -191,7 +192,7 @@ public String objectId;
 				}
 			}, cal.get(Calendar.YEAR), cal.get(Calendar.MONTH), cal.get(Calendar.DAY_OF_MONTH));
 			
-			dateDialog.getDatePicker().setMinDate(cal.getTimeInMillis());
+			dateDialog.getDatePicker().setMinDate(Calendar.getInstance().getTimeInMillis() - 1000);
 			
 			dateDialog.show();
 		}else{
@@ -254,7 +255,7 @@ public String objectId;
 		
 		//Range Validation for Time input
 		public Boolean timeValidate(int time){
-			if(time < 24 && time > 1){
+			if(time <= 24 && time >= 1){
 				return true;
 			}else{
 				return false;

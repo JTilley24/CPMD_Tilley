@@ -1,7 +1,7 @@
 package com.jtilley.things2do;
 //Justin Tilley
 //CPMD 
-//Project 1
+//Project 2
 
 import android.app.Activity;
 import android.app.Fragment;
@@ -97,5 +97,4 @@ Context mContext;
 			return rootView;
 		}
 	}
-
 }

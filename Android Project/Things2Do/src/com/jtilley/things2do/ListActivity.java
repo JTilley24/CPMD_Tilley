@@ -1,7 +1,7 @@
 package com.jtilley.things2do;
 //Justin Tilley
 //CPMD 
-//Project 1
+//Project 2
 
 import java.util.List;
 
@@ -66,8 +66,6 @@ Context mContext;
 			setTitle(current.getUsername() + "'s List");
 			if(checkConnection()){
 				getList();
-			}else{
-				Toast.makeText(mContext, "No connection! Please try again.", Toast.LENGTH_LONG).show();
 			}
 		}
 	}
@@ -88,6 +86,7 @@ Context mContext;
 		});
 	}
 	
+	//Check Network Connection
 	public Boolean checkConnection(){
 		Boolean connected;
 		
@@ -106,6 +105,7 @@ Context mContext;
 		startActivity(intent);
 	}
 	
+	//Send Data from Selected Item and open Add Item Activity
 	public void displayAddItem(String name, String date, int time, String objectid){
 		Intent intent = new Intent(this, AddItemActivity.class);
 		intent.putExtra("name", name);
@@ -157,6 +157,8 @@ Context mContext;
 					false);
 			taskList = (ListView) rootView.findViewById(R.id.taskList);
 			noDataText = (TextView) rootView.findViewById(R.id.noDataText);
+			
+			//Long Click on List Item to Edit or Delete
 			taskList.setOnCreateContextMenuListener(new OnCreateContextMenuListener() {
 				 
 				@Override
@@ -195,7 +197,7 @@ Context mContext;
 			// TODO Auto-generated method stub
 			AdapterContextMenuInfo menuInfo = (AdapterContextMenuInfo) item.getMenuInfo();
 			ParseObject temp = (ParseObject) taskList.getAdapter().getItem(menuInfo.position);
-			
+			//Edit or Delete Options
 			if(item.getItemId() == 1){
 				String name = (String) temp.get("Name");
 				String date = (String) temp.get("Date");
@@ -210,7 +212,6 @@ Context mContext;
 						activity.getList();
 					}
 				});
-				
 			}
 			
 			return super.onContextItemSelected(item);

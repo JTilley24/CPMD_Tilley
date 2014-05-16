@@ -1,7 +1,7 @@
 package com.jtilley.things2do;
 //Justin Tilley
 //CPMD 
-//Project 1
+//Project 2
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
