@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		CB07CF95192E6C7D0058D076 /* Reachability.m in Sources */ = {isa = PBXBuildFile; fileRef = CB07CF94192E6C7D0058D076 /* Reachability.m */; };
 		CB1AC175192A9E080058AE38 /* TaskTableCell.xib in Resources */ = {isa = PBXBuildFile; fileRef = CB1AC174192A9E080058AE38 /* TaskTableCell.xib */; };
 		CB1AC178192A9E4F0058AE38 /* TaskTableCell.m in Sources */ = {isa = PBXBuildFile; fileRef = CB1AC177192A9E4F0058AE38 /* TaskTableCell.m */; };
 		CB700850191BD39A00084D75 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = CB70084F191BD39A00084D75 /* Foundation.framework */; };
@@ -47,6 +48,8 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		CB07CF93192E6C7D0058D076 /* Reachability.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Reachability.h; sourceTree = "<group>"; };
+		CB07CF94192E6C7D0058D076 /* Reachability.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = Reachability.m; sourceTree = "<group>"; };
 		CB1AC174192A9E080058AE38 /* TaskTableCell.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = TaskTableCell.xib; sourceTree = "<group>"; };
 		CB1AC176192A9E4F0058AE38 /* TaskTableCell.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TaskTableCell.h; sourceTree = "<group>"; };
 		CB1AC177192A9E4F0058AE38 /* TaskTableCell.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TaskTableCell.m; sourceTree = "<group>"; };
@@ -180,6 +183,8 @@
 		CB700856191BD39A00084D75 /* Supporting Files */ = {
 			isa = PBXGroup;
 			children = (
+				CB07CF93192E6C7D0058D076 /* Reachability.h */,
+				CB07CF94192E6C7D0058D076 /* Reachability.m */,
 				CB700857191BD39A00084D75 /* Things2Do-Info.plist */,
 				CB700858191BD39A00084D75 /* InfoPlist.strings */,
 				CB70085B191BD39A00084D75 /* main.m */,
@@ -307,6 +312,7 @@
 				CB700866191BD39A00084D75 /* ViewController.m in Sources */,
 				CBBB7AAC192D219700C70457 /* AddItemViewController.m in Sources */,
 				CB1AC178192A9E4F0058AE38 /* TaskTableCell.m in Sources */,
+				CB07CF95192E6C7D0058D076 /* Reachability.m in Sources */,
 				CB700860191BD39A00084D75 /* AppDelegate.m in Sources */,
 				CBD1011A1922DEFB00720E99 /* ListViewController.m in Sources */,
 				CB70085C191BD39A00084D75 /* main.m in Sources */,

@@ -14,9 +14,12 @@
     IBOutlet UITableView *taskTable;
     IBOutlet UINavigationItem *listNavTitle;
     NSMutableArray *tasksArray;
+    NSMutableDictionary *saveDict;
+    NSMutableDictionary *tasksDict;
     NSIndexPath *selectedTask;
+    PFUser *current;
 }
-
+@property NSString *userTimestamp;
 -(IBAction)onClick:(id)sender;
 
 @end

@@ -8,7 +8,7 @@
 
 #import <UIKit/UIKit.h>
 #import <Parse/Parse.h>
-
+#import "ListViewController.h"
 @interface AddItemViewController : UIViewController<UITextFieldDelegate>
 {
     IBOutlet UITextField *nameText;
@@ -21,6 +21,7 @@
     NSMutableString *alertString;
 }
 @property(nonatomic, strong) PFObject *editObject;
+@property(nonatomic, strong) NSMutableDictionary *offlineObject;
 -(IBAction)onClick:(id)sender;
 -(IBAction)onChange:(id)sender;
 @end

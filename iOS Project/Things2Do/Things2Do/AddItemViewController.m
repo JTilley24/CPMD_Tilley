@@ -7,12 +7,14 @@
 //
 
 #import "AddItemViewController.h"
+#import "ListViewController.h"
+#import "Reachability.h"
 @interface AddItemViewController ()
 
 @end
 
 @implementation AddItemViewController
-@synthesize editObject;
+@synthesize editObject, offlineObject;
 - (id)initWithNibName:(NSString *)nibNameOrNil bundle:(NSBundle *)nibBundleOrNil
 {
     self = [super initWithNibName:nibNameOrNil bundle:nibBundleOrNil];
@@ -37,10 +39,18 @@
     dateText.text = dateString;
     [dateText setInputView:datePicker];
     [dateText setDelegate:self];
-    if(editObject != nil){
-        dateText.text = editObject[@"Date"];
-        nameText.text = editObject[@"Name"];
-        timeText.text = [editObject[@"Time"] stringValue];
+    if([self checkConnection]){
+        if(editObject != nil){
+            dateText.text = editObject[@"Date"];
+            nameText.text = editObject[@"Name"];
+            timeText.text = [editObject[@"Time"] stringValue];
+        }
+    }else{
+        if (offlineObject != nil) {
+            dateText.text = [offlineObject objectForKey:@"Date"];
+            nameText.text = [offlineObject objectForKey:@"Name"];
+            timeText.text = [[offlineObject objectForKey:@"Time"] stringValue];
+        }
     }
 
     [super viewDidLoad];
@@ -132,32 +142,126 @@
 - (void)saveToParse{
     
     if(editObject != nil){
-        PFQuery *query = [PFQuery queryWithClassName:@"Task"];
-        [query getObjectInBackgroundWithId:[editObject objectId] block:^(PFObject *object, NSError *error) {
-            if(error == nil){
-                object[@"Name"] = nameText.text;
-                object[@"Date"] = dateText.text;
-                NSNumberFormatter *formatter = [[NSNumberFormatter alloc] init];
-                [formatter setNumberStyle:NSNumberFormatterDecimalStyle];
-                NSNumber *timeInt = [formatter numberFromString:timeText.text];
-                object[@"Time"] = timeInt;
-                [object saveInBackground];
-            }
-        }];
-    }else{
-        PFObject *object = [PFObject objectWithClassName:@"Task"];
+        PFObject *object = editObject;
         object[@"Name"] = nameText.text;
         object[@"Date"] = dateText.text;
         NSNumberFormatter *formatter = [[NSNumberFormatter alloc] init];
         [formatter setNumberStyle:NSNumberFormatterDecimalStyle];
         NSNumber *timeInt = [formatter numberFromString:timeText.text];
         object[@"Time"] = timeInt;
-        object[@"User"] = [PFUser currentUser];
-        object.ACL = [PFACL ACLWithUser:[PFUser currentUser]];
-        [object saveInBackground];
+        if([self checkConnection]){
+            [object saveInBackground];
+            PFUser *current = [PFUser currentUser];
+            current[@"Changed"] = [NSString stringWithFormat:@"%f", [[NSDate date] timeIntervalSince1970] * 1000];
+            [current saveInBackground];
+            NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+            NSMutableDictionary *tasksDict = [defaults objectForKey:@"Tasks"];
+            [self saveObject:object :tasksDict: @"Tasks"];
+        }else{
+            NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+            NSMutableDictionary *saveDict = (NSMutableDictionary *)[[defaults objectForKey:[PFUser currentUser].username] objectForKey:@"Save"];
+            [self saveObject:object :saveDict :@"Save"];
+            NSMutableDictionary *tasksDict = (NSMutableDictionary *)[defaults objectForKey:@"Tasks"];
+            [self saveObject:object :tasksDict: @"Tasks"];
+        }
+    }else if(offlineObject != nil){
+        NSMutableDictionary *object = [offlineObject mutableCopy];
+        [object setObject:nameText.text forKey:@"Name"];
+        [object setObject:dateText.text forKey:@"Date"];
+        NSNumberFormatter *formatter = [[NSNumberFormatter alloc] init];
+        [formatter setNumberStyle:NSNumberFormatterDecimalStyle];
+        NSNumber *timeInt = [formatter numberFromString:timeText.text];
+        [object setObject:timeInt forKey:@"Time"];
+        NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+        NSMutableDictionary *userDict = [[defaults objectForKey:[PFUser currentUser].username] mutableCopy];
+        NSMutableDictionary *saveDict = [[userDict objectForKey:@"Save"] mutableCopy];
+        NSMutableDictionary *taskDict = [[userDict objectForKey:@"Tasks"] mutableCopy];
+        if(saveDict == nil){
+            saveDict = [[NSMutableDictionary alloc] init];
+        }
+        NSString *objectId = [offlineObject objectForKey:@"ObjectId"];
+        if(objectId != nil){
+            [saveDict setObject:object forKey:objectId];
+            [taskDict setObject:object forKey:objectId];
+        }else{
+            [saveDict setObject:object forKey:[object objectForKey:@"Name"]];
+            [taskDict removeObjectForKey:[offlineObject objectForKey:@"Name"]];
+            [taskDict setObject:object forKey:[object objectForKey:@"Name"]];
+        }
+
+        [userDict setObject:saveDict forKey:@"Save"];
+        [userDict setObject:taskDict forKey:@"Tasks"];
+        [defaults setObject:userDict forKey:[PFUser currentUser].username];
+        [defaults synchronize];
+        
+    
+    }else{
+        PFObject *object = [PFObject objectWithClassName:@"Task"];
+        PFUser *current = [PFUser currentUser];
+        object[@"Name"] = nameText.text;
+        object[@"Date"] = dateText.text;
+        NSNumberFormatter *formatter = [[NSNumberFormatter alloc] init];
+        [formatter setNumberStyle:NSNumberFormatterDecimalStyle];
+        NSNumber *timeInt = [formatter numberFromString:timeText.text];
+        object[@"Time"] = timeInt;
+        object[@"User"] = current;
+        object.ACL = [PFACL ACLWithUser:current];
+        if([self checkConnection]){
+            [object saveInBackground];
+            current[@"Changed"] = [NSString stringWithFormat:@"%f", [[NSDate date] timeIntervalSince1970] * 1000];
+            [current saveInBackground];
+        }else{
+            NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+            NSMutableDictionary *saveDict = (NSMutableDictionary *)[[defaults objectForKey:[PFUser currentUser].username] objectForKey:@"Save"];
+            [self saveObject:object :saveDict :@"Save"];
+            
+        }
+        NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+        NSMutableDictionary *tasksDict = (NSMutableDictionary *)[[defaults objectForKey:[PFUser currentUser].username] objectForKey:@"Tasks"];
+        [self saveObject:object :tasksDict: @"Tasks"];
     }
+   
+    
+
 }
 
+-(void)saveObject:(PFObject *)task :(NSMutableDictionary *)tasksDict :(NSString *)dictKey{
+    NSArray *keys = [task allKeys];
+    if(tasksDict != nil){
+        tasksDict = [tasksDict mutableCopy];
+    }else{
+        tasksDict = [[NSMutableDictionary alloc] init];
+    }
+    NSMutableDictionary *taskDict = [[NSMutableDictionary alloc] init];
+    for(NSString *key in keys){
+        if([key isEqualToString:@"Date"] || [key isEqualToString:@"Name"] || [key isEqualToString:@"Time"]){
+            [taskDict setObject:[task objectForKey:key] forKey:key];
+        }
+    }
+    NSString *objectId = [task objectId];
+    if(objectId != nil){
+        [taskDict setObject:objectId forKey:@"ObjectId"];
+        [tasksDict setObject:taskDict forKey:[task objectId]];
+        
+    }else{
+        [tasksDict setObject:taskDict forKey:[task valueForKey:@"Name"]];
+    }
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    NSMutableDictionary *userDict = [[defaults objectForKey:[PFUser currentUser].username] mutableCopy];
+    [userDict setObject:tasksDict forKey:dictKey];
+    [defaults setObject:userDict forKey:[PFUser currentUser].username];
+    [defaults synchronize];
+}
+
+-(BOOL)checkConnection{
+    Reachability *network = [Reachability reachabilityWithHostName:@"www.google.com"];
+    NetworkStatus status = [network currentReachabilityStatus];
+    if(status == NotReachable){
+        return NO;
+    }else{
+        return YES;
+    }
+}
 
 /*
 #pragma mark - Navigation
