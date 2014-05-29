@@ -4,6 +4,7 @@ package com.jtilley.things2do;
 //Project 2
 
 import java.util.Calendar;
+import java.util.List;
 
 import android.app.Activity;
 import android.app.DatePickerDialog;
@@ -11,6 +12,7 @@ import android.app.DatePickerDialog.OnDateSetListener;
 import android.app.Fragment;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Bundle;
@@ -22,10 +24,9 @@ import android.view.View.OnFocusChangeListener;
 import android.view.ViewGroup;
 import android.widget.DatePicker;
 import android.widget.EditText;
-import android.widget.Toast;
 
+import com.parse.FindCallback;
 import com.parse.GetCallback;
-import com.parse.ParseACL;
 import com.parse.ParseException;
 import com.parse.ParseObject;
 import com.parse.ParseQuery;
@@ -118,27 +119,51 @@ public String objectId;
 	public void saveItem(final String name, final String date, final int time){
 		if(objectId != null){
 			ParseQuery<ParseObject> query = ParseQuery.getQuery("Task");
-			query.getInBackground(objectId, new GetCallback<ParseObject>() {
+			if(!checkConnection()){
+				query.fromLocalDatastore();
 				
-				@Override
-				public void done(ParseObject task, com.parse.ParseException e) {
-					// TODO Auto-generated method stub
-					if(e == null){
-						task.put("Name", name);
-						task.put("Date", date);
-						task.put("Time", time);
-						task.saveInBackground(new SaveCallback() {
-							
-							@Override
-							public void done(ParseException arg0) {
-								// TODO Auto-generated method stub
+				query.findInBackground(new FindCallback<ParseObject>() {
+					
+					@Override
+					public void done(List<ParseObject> list, ParseException e) {
+						// TODO Auto-generated method stub
+						for(int i = 0; i< list.size(); i++){
+							ParseObject temp = list.get(i);
+							if(list.get(i).getObjectId().equalsIgnoreCase(objectId)){
+								temp.put("Name", name);
+								temp.put("Date", date);
+								temp.put("Time", time);
+								temp.saveEventually();
+								setChanges();
 								finish();
 							}
-						});
+						}
 					}
-				}
-			} );
-			
+				});
+			}else{
+				query.getInBackground(objectId, new GetCallback<ParseObject>() {
+					
+					@Override
+					public void done(ParseObject task, com.parse.ParseException e) {
+						// TODO Auto-generated method stub
+						if(e == null){
+							task.put("Name", name);
+							task.put("Date", date);
+							task.put("Time", time);
+							task.saveInBackground(new SaveCallback() {
+									
+									@Override
+									public void done(ParseException arg0) {
+										// TODO Auto-generated method stub
+										timeStampUser();
+										finish();
+									}
+								});
+						
+						}
+					}
+				});
+			}
 		}else{
 			ParseUser current = ParseUser.getCurrentUser();
 			ParseObject task = new ParseObject("Task");
@@ -146,17 +171,54 @@ public String objectId;
 			task.put("Name", name);
 			task.put("Date", date);
 			task.put("Time", time);
-			task.setACL(new ParseACL(current));
 			task.put("User", current);
-			task.saveInBackground(new SaveCallback() {
-				
-				@Override
-				public void done(ParseException arg0) {
-					// TODO Auto-generated method stub
-					finish();
-				}
-			});
+			if(checkConnection()){
+				task.saveInBackground(new SaveCallback() {
+					
+					@Override
+					public void done(ParseException arg0) {
+						// TODO Auto-generated method stub
+						timeStampUser();
+						finish();
+					}
+				});
+			}else{
+				task.saveEventually();
+				setChanges();
+				finish();
+			}
 		}
+	}
+	
+	public void timeStampUser(){
+		ParseQuery<ParseObject> query = ParseQuery.getQuery("Changes");
+		query.findInBackground(new FindCallback<ParseObject>() {
+			
+			@Override
+			public void done(List<ParseObject> list, ParseException e) {
+				// TODO Auto-generated method stub
+				if(e == null){
+					if(list.size() > 0){
+						ParseObject temp = list.get(0);
+						temp.put("User", ParseUser.getCurrentUser().getUsername());
+						temp.put("TimeStamp", String.valueOf(System.currentTimeMillis()));
+						temp.saveInBackground();
+					}else{
+						ParseObject timeSObject = new ParseObject("Changes");
+						timeSObject.put("User", ParseUser.getCurrentUser().getUsername());
+						timeSObject.put("TimeStamp", String.valueOf(System.currentTimeMillis()));
+						timeSObject.saveInBackground();
+					}
+				}
+			}
+		});
+	}
+	
+	public void setChanges(){
+		SharedPreferences prefs = getSharedPreferences(ParseUser.getCurrentUser().getUsername(), 0);
+		SharedPreferences.Editor editPrefs = prefs.edit();
+		editPrefs.putBoolean("Changed", true);
+		editPrefs.commit();
 	}
 	
 	//Display DialogFragment for Date Input
@@ -283,11 +345,8 @@ public String objectId;
 				validate = false;
 			}
 			if(validate == true){
-				if(activity.checkConnection()){
 					activity.saveItem(taskInput.getText().toString(), dateInput.getText().toString(), Integer.valueOf(timeInput.getText().toString()));
-				}else{
-					Toast.makeText(activity, "No Connection! Please try again.", Toast.LENGTH_LONG).show();
-				}
+				
 			}
 		}
 	}

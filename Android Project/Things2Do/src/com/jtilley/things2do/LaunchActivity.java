@@ -16,7 +16,6 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 
-import com.parse.Parse;
 import com.parse.ParseUser;
 
 public class LaunchActivity extends Activity {
@@ -44,8 +43,6 @@ Context mContext;
 		@Override
 		protected Void doInBackground(Void... params) {
 			// TODO Auto-generated method stub
-			
-			Parse.initialize(mContext,"CdeHn8mEBCyXEyUSXakxslroJJ7s3rhssAatCooS", "4rUjsJqJamYFQdOyZ9J3eegMdJRXMkOMlwVL8YZV");
 			ParseUser current = ParseUser.getCurrentUser();
 			if(current != null){
 				Log.i("Current", current.getUsername().toString());

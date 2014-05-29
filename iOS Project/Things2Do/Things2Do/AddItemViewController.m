@@ -151,9 +151,7 @@
         object[@"Time"] = timeInt;
         if([self checkConnection]){
             [object saveInBackground];
-            PFUser *current = [PFUser currentUser];
-            current[@"Changed"] = [NSString stringWithFormat:@"%f", [[NSDate date] timeIntervalSince1970] * 1000];
-            [current saveInBackground];
+            [self saveTimeStamp];
             NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
             NSMutableDictionary *tasksDict = [defaults objectForKey:@"Tasks"];
             [self saveObject:object :tasksDict: @"Tasks"];
@@ -205,11 +203,9 @@
         NSNumber *timeInt = [formatter numberFromString:timeText.text];
         object[@"Time"] = timeInt;
         object[@"User"] = current;
-        object.ACL = [PFACL ACLWithUser:current];
         if([self checkConnection]){
             [object saveInBackground];
-            current[@"Changed"] = [NSString stringWithFormat:@"%f", [[NSDate date] timeIntervalSince1970] * 1000];
-            [current saveInBackground];
+            [self saveTimeStamp];
         }else{
             NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
             NSMutableDictionary *saveDict = (NSMutableDictionary *)[[defaults objectForKey:[PFUser currentUser].username] objectForKey:@"Save"];
@@ -251,6 +247,23 @@
     [userDict setObject:tasksDict forKey:dictKey];
     [defaults setObject:userDict forKey:[PFUser currentUser].username];
     [defaults synchronize];
+}
+
+-(void)saveTimeStamp{
+    PFQuery  *query = [PFQuery queryWithClassName:@"Changes"];
+    [query whereKey:@"User" equalTo:[PFUser currentUser].username];
+    [query findObjectsInBackgroundWithBlock:^(NSArray *objects, NSError *error) {
+        if([objects count] > 0){
+            PFObject *temp = [objects objectAtIndex:0];
+            temp[@"TimeStamp"] = [NSString stringWithFormat:@"%f", [[NSDate date] timeIntervalSince1970] * 1000];
+            [temp saveInBackground];
+        }else{
+            PFObject *newTime = [PFObject objectWithClassName:@"Changes"];
+            newTime[@"User"] = [PFUser currentUser].username;
+            newTime[@"TimeStamp"] = [NSString stringWithFormat:@"%f", [[NSDate date] timeIntervalSince1970] * 1000];
+            [newTime saveInBackground];
+        }
+    }];
 }
 
 -(BOOL)checkConnection{

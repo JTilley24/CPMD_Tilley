@@ -11,15 +11,15 @@ import com.parse.ParseException;
 import com.parse.ParseObject;
 import com.parse.ParseQuery;
 import com.parse.ParseUser;
-
 import android.app.Activity;
 import android.app.Fragment;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Bundle;
-import android.util.Log;
+import android.os.Handler;
 import android.view.ContextMenu;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -31,10 +31,10 @@ import android.view.ViewGroup;
 import android.widget.AdapterView.AdapterContextMenuInfo;
 import android.widget.ListView;
 import android.widget.TextView;
-import android.widget.Toast;
 
 public class ListActivity extends Activity {
 PlaceholderFragment frag;
+String timeStamp;
 Context mContext;
 
 	@Override
@@ -53,6 +53,8 @@ Context mContext;
 		}else{
 			frag = (PlaceholderFragment) getFragmentManager().findFragmentByTag("list_frag");
 		}
+		
+		
 	}
 
 	@Override
@@ -62,11 +64,36 @@ Context mContext;
 		//Get and Display Current User Data
 		ParseUser current = ParseUser.getCurrentUser();
 		if(current != null){
-			Log.i("USER", current.toString());
 			setTitle(current.getUsername() + "'s List");
-			if(checkConnection()){
-				getList();
-			}
+			getList();
+			
+			ParseQuery<ParseObject> query = ParseQuery.getQuery("Changes");
+			query.whereEqualTo("User", current.getUsername());
+			query.findInBackground(new FindCallback<ParseObject>() {
+				
+				@Override
+				public void done(List<ParseObject> list, ParseException e) {
+					// TODO Auto-generated method stub
+					if(e == null){
+						if(list.size() > 0){
+							timeStamp = list.get(0).getString("TimeStamp");
+						}
+					}
+				}
+			});
+			checkOfflineChanges();
+			final Handler parseHandler = new Handler();
+			final Runnable parseSync = new Runnable() {
+				
+				@Override
+				public void run() {
+					// TODO Auto-generated method stub
+					checkChanges();
+					parseHandler.postDelayed(this, 10000);
+				}
+			};
+			parseHandler.postDelayed(parseSync, 10000);
+			
 		}
 	}
 	
@@ -74,16 +101,81 @@ Context mContext;
 	public void getList(){
 		ParseQuery<ParseObject> query = ParseQuery.getQuery("Task");
 		query.whereEqualTo("User", ParseUser.getCurrentUser());
+		if(checkConnection() == false){
+			query.fromLocalDatastore();
+		}
 		query.findInBackground(new FindCallback<ParseObject>() {
 	
 			@Override
 			public void done(List<ParseObject> list, ParseException e) {
 				// TODO Auto-generated method stub
 				if(e == null){
+					if(checkConnection()){	
+						ParseObject.unpinAllInBackground();
+					}
+					ParseObject.pinAllInBackground(list);
 					frag.displayList(list);
 				}
 			}
 		});
+	}
+	
+	public void setTimeStamp(){
+		ParseQuery<ParseObject> query = ParseQuery.getQuery("Changes");
+		query.findInBackground(new FindCallback<ParseObject>() {
+			
+			@Override
+			public void done(List<ParseObject> list, ParseException e) {
+				// TODO Auto-generated method stub
+				if(e == null){
+					if(list.size() > 0){
+						ParseObject temp = list.get(0);
+						temp.put("User", ParseUser.getCurrentUser().getUsername());
+						temp.put("TimeStamp", String.valueOf(System.currentTimeMillis()));
+						temp.saveInBackground();
+					}else{
+						ParseObject timeSObject = new ParseObject("Changes");
+						timeSObject.put("User", ParseUser.getCurrentUser().getUsername());
+						timeSObject.put("TimeStamp", String.valueOf(System.currentTimeMillis()));
+						timeSObject.saveInBackground();
+					}
+				}
+			}
+		});
+	}
+	
+	public void checkOfflineChanges(){
+		SharedPreferences prefs = getSharedPreferences(ParseUser.getCurrentUser().getUsername(), 0);
+		if(prefs != null){
+			Boolean changed = prefs.getBoolean("Changed", false);
+			if(changed){
+				ParseQuery<ParseObject> query = ParseQuery.getQuery("Changes");
+				query.findInBackground(new FindCallback<ParseObject>() {
+					
+					@Override
+					public void done(List<ParseObject> list, ParseException e) {
+						// TODO Auto-generated method stub
+						if(e == null){
+							if(list.size() > 0){
+								ParseObject temp = list.get(0);
+								temp.put("User", ParseUser.getCurrentUser().getUsername());
+								temp.put("TimeStamp", String.valueOf(System.currentTimeMillis()));
+								temp.saveInBackground();
+							}else{
+								ParseObject timeSObject = new ParseObject("Changes");
+								timeSObject.put("User", ParseUser.getCurrentUser().getUsername());
+								timeSObject.put("TimeStamp", String.valueOf(System.currentTimeMillis()));
+								timeSObject.saveInBackground();
+							}
+							
+						}
+					}
+				});
+				SharedPreferences.Editor editPrefs = prefs.edit();
+				editPrefs.putBoolean("Changed", false);
+				editPrefs.commit();
+			}
+		}
 	}
 	
 	//Check Network Connection
@@ -138,6 +230,27 @@ Context mContext;
 		}
 		return super.onOptionsItemSelected(item);
 	}
+	
+	public void checkChanges(){
+		
+		ParseQuery<ParseObject> query = ParseQuery.getQuery("Changes");
+		query.whereEqualTo("User", ParseUser.getCurrentUser().getUsername());
+		query.findInBackground(new FindCallback<ParseObject>() {
+			
+			@Override
+			public void done(List<ParseObject> list, ParseException e) {
+				// TODO Auto-generated method stub
+				if(e == null){
+					if(list.size() > 0){
+						String newTime = list.get(0).getString("TimeStamp");
+						if(!timeStamp.equalsIgnoreCase(newTime)){
+							getList();
+						}
+					}
+				}
+			}
+		});
+	}
 
 	/**
 	 * A placeholder fragment containing a simple view.
@@ -165,12 +278,8 @@ Context mContext;
 				public void onCreateContextMenu(ContextMenu menu, View v,
 						ContextMenuInfo menuInfo) {
 					// TODO Auto-generated method stub
-					if(activity.checkConnection()){
 						menu.add(0, 1, 0, "EDIT");
 						menu.add(0, 2, 1, "DELETE");
-					}else{
-						Toast.makeText(activity, "No connection! Please try again.", Toast.LENGTH_LONG).show();
-					}
 				}
 			});
 			return rootView;
@@ -204,14 +313,24 @@ Context mContext;
 				int time = Integer.valueOf(temp.get("Time").toString());
 				activity.displayAddItem(name, date, time, temp.getObjectId().toString());
 			}else if(item.getItemId() == 2){
-				temp.deleteInBackground(new DeleteCallback() {
-					
-					@Override
-					public void done(ParseException arg0) {
-						// TODO Auto-generated method stub
-						activity.getList();
-					}
-				});
+				if(activity.checkConnection()){
+					temp.deleteInBackground(new DeleteCallback() {
+						
+						@Override
+						public void done(ParseException arg0) {
+							// TODO Auto-generated method stub
+							activity.getList();
+							activity.setTimeStamp();
+						}
+					});
+				}else{
+					temp.deleteEventually();
+					SharedPreferences prefs = activity.getSharedPreferences(ParseUser.getCurrentUser().getUsername(), 0);
+					SharedPreferences.Editor editPrefs = prefs.edit();
+					editPrefs.putBoolean("Changed", true);
+					editPrefs.commit();
+					activity.getList();
+				}
 			}
 			
 			return super.onContextItemSelected(item);

@@ -42,13 +42,16 @@
 }
 
 -(void) checkForChange{
-    PFQuery *userQuery = [PFUser query];
-    userTimestamp = [PFUser currentUser][@"Changed"];
-    PFUser *user = (PFUser *)[userQuery getObjectWithId:[PFUser currentUser].objectId];
-    NSString *time = [user objectForKey:@"Changed"];
-    if(![time isEqualToString:userTimestamp]){
-        [self initDefaults];
-    }
+    PFQuery  *query = [PFQuery queryWithClassName:@"Changes"];
+    [query whereKey:@"User" equalTo:[PFUser currentUser].username];
+    [query findObjectsInBackgroundWithBlock:^(NSArray *objects, NSError *error) {
+        if([objects count] > 0){
+            NSString *time = [[objects objectAtIndex:0] objectForKey:@"TimeStamp"];
+            if(![time isEqualToString:userTimestamp]){
+                [self initDefaults];
+            }
+        }
+    }];
 }
 
 -(void) initDefaults{
@@ -68,7 +71,14 @@
             [self sendToParse];
         }else{
             [self getTasks];
-            [NSTimer scheduledTimerWithTimeInterval:10.0 target:self selector:@selector(checkForChange) userInfo:nil repeats:YES];
+            PFQuery  *query = [PFQuery queryWithClassName:@"Changes"];
+            [query whereKey:@"User" equalTo:[PFUser currentUser].username];
+            [query findObjectsInBackgroundWithBlock:^(NSArray *objects, NSError *error) {
+                if([objects count] > 0){
+                    userTimestamp = [[objects objectAtIndex:0] objectForKey:@"TimeStamp"];
+                    [NSTimer scheduledTimerWithTimeInterval:10.0 target:self selector:@selector(checkForChange) userInfo:nil repeats:YES];
+                }
+            }];
         }
     }
     
@@ -85,7 +95,6 @@
                 newTask[@"Date"] = [savedTask objectForKey:@"Date"];
                 newTask[@"Time"] = [savedTask objectForKey:@"Time"];
                 newTask[@"User"] = [PFUser currentUser];
-                newTask.ACL = [PFACL ACLWithUser:[PFUser currentUser]];
                 [newTask saveInBackgroundWithBlock:^(BOOL succeeded, NSError *error) {
                     if(!error){
                         [self getTasks];
@@ -97,7 +106,7 @@
                 [userDict setObject:saveDict forKey:@"Save"];
                 [defaults setObject:userDict forKey:[PFUser currentUser].username];
                 [defaults synchronize];
-
+                [self saveTimeStamp];
             }
         }
 }
@@ -188,11 +197,7 @@
 
 -(NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section
 {
-   /*if([self checkConnection]){
-        if(tasksArray != nil){
-            return [tasksArray count];
-        }
-   }else*/ if(tasksDict != nil){
+    if(tasksDict != nil){
         return [tasksDict count];
     }
     return 0;
@@ -228,8 +233,7 @@
     if(buttonIndex == [alertView cancelButtonIndex]){
         if(objectIndex != 100){
             if([self checkConnection]){
-                current[@"Changed"] = [NSString stringWithFormat:@"%f", [[NSDate date] timeIntervalSince1970] * 1000];
-                [current saveInBackground];
+                [self saveTimeStamp];
                 [[tasksArray objectAtIndex:objectIndex] deleteInBackground];
                 [tasksArray removeObjectAtIndex:objectIndex];
             }else{
@@ -272,6 +276,24 @@
         [self.navigationController pushViewController:addItem animated:YES];
     }
 }
+
+-(void)saveTimeStamp{
+    PFQuery  *query = [PFQuery queryWithClassName:@"Changes"];
+    [query whereKey:@"User" equalTo:[PFUser currentUser].username];
+    [query findObjectsInBackgroundWithBlock:^(NSArray *objects, NSError *error) {
+        if([objects count] > 0){
+            PFObject *temp = [objects objectAtIndex:0];
+            temp[@"TimeStamp"] = [NSString stringWithFormat:@"%f", [[NSDate date] timeIntervalSince1970] * 1000];
+            [temp saveInBackground];
+        }else{
+            PFObject *newTime = [PFObject objectWithClassName:@"Changes"];
+            newTime[@"User"] = [PFUser currentUser].username;
+            newTime[@"TimeStamp"] = [NSString stringWithFormat:@"%f", [[NSDate date] timeIntervalSince1970] * 1000];
+            [newTime saveInBackground];
+        }
+    }];
+}
+
 
 -(IBAction)onClick:(id)sender{
     UIBarButtonItem *button = sender;
