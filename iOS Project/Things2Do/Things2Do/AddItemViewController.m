@@ -26,6 +26,7 @@
 
 - (void)viewDidLoad
 {
+    //Setup DatePicker and Check for Editing Task
     NSDate *current = [[NSDate alloc] init];
     [datePicker setMinimumDate:current];
     datePicker.timeZone = [NSTimeZone localTimeZone];
@@ -63,12 +64,14 @@
     // Dispose of any resources that can be recreated.
 }
 
+//OnClick for Cancel and Done Button
 -(IBAction)onClick:(id)sender
 {
     UIButton *button = sender;
     if(button.tag == 0){
         [self.navigationController popViewControllerAnimated:YES];
     }else if (button.tag == 1){
+        //Check Validation
         BOOL checkInput = [self validateInputs];
         if(checkInput){
             [self saveToParse];
@@ -80,6 +83,7 @@
     }
 }
 
+//Set Date from DatePicker
 -(IBAction)onChange:(id)sender
 {
     NSDate *pickerDate = datePicker.date;
@@ -87,12 +91,13 @@
     dateText.text = dateString;
 }
 
-
+//Check for User Click Off of TextField
 - (void)touchesBegan:(NSSet *)touches withEvent:(UIEvent *)event
 {
     [self.view endEditing:YES];
 }
 
+//Display DatePicker
 - (void)textFieldDidBeginEditing:(UITextField *)textField
 {
     if(textField.tag == 1){
@@ -100,6 +105,7 @@
     }
 }
 
+//Check for Selected TextField
 - (void)textFieldDidEndEditing:(UITextField *)textField
 {
     if(textField.tag == 0){
@@ -118,11 +124,13 @@
     }
 }
 
+//Hide Keyboard
 - (BOOL)textFieldShouldReturn:(UITextField *)textField{
     [textField resignFirstResponder];
     return YES;
 }
 
+//Validate TextFields
 -(BOOL) validateInputs{
     BOOL validate = YES;
     alertString = [[NSMutableString alloc] init];
@@ -139,8 +147,9 @@
     return validate;
 }
 
+//Check if Editing Task and Save to Parse or Local Storage
 - (void)saveToParse{
-    
+    //Save Edited Task to Parse or Local Storage
     if(editObject != nil){
         PFObject *object = editObject;
         object[@"Name"] = nameText.text;
@@ -153,15 +162,25 @@
             [object saveInBackground];
             [self saveTimeStamp];
             NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
-            NSMutableDictionary *tasksDict = [defaults objectForKey:@"Tasks"];
+            NSMutableDictionary *tasksDict = [[defaults objectForKey:@"Tasks"] mutableCopy];
+            if(tasksDict == nil){
+                tasksDict = [[NSMutableDictionary alloc] init];
+            }
             [self saveObject:object :tasksDict: @"Tasks"];
         }else{
             NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
-            NSMutableDictionary *saveDict = (NSMutableDictionary *)[[defaults objectForKey:[PFUser currentUser].username] objectForKey:@"Save"];
+            NSMutableDictionary *saveDict = [[[defaults objectForKey:[PFUser currentUser].username] objectForKey:@"Save"] mutableCopy];
+            if(saveDict == nil){
+                saveDict = [[NSMutableDictionary alloc] init];
+            }
             [self saveObject:object :saveDict :@"Save"];
-            NSMutableDictionary *tasksDict = (NSMutableDictionary *)[defaults objectForKey:@"Tasks"];
+            NSMutableDictionary *tasksDict = [[defaults objectForKey:@"Tasks"] mutableCopy];
+            if(tasksDict == nil){
+                tasksDict = [[NSMutableDictionary alloc] init];
+            }
             [self saveObject:object :tasksDict: @"Tasks"];
         }
+    //Save Offline Task to Local Storage
     }else if(offlineObject != nil){
         NSMutableDictionary *object = [offlineObject mutableCopy];
         [object setObject:nameText.text forKey:@"Name"];
@@ -172,10 +191,16 @@
         [object setObject:timeInt forKey:@"Time"];
         NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
         NSMutableDictionary *userDict = [[defaults objectForKey:[PFUser currentUser].username] mutableCopy];
+        if(userDict == nil){
+            userDict = [[NSMutableDictionary alloc] init];
+        }
         NSMutableDictionary *saveDict = [[userDict objectForKey:@"Save"] mutableCopy];
         NSMutableDictionary *taskDict = [[userDict objectForKey:@"Tasks"] mutableCopy];
         if(saveDict == nil){
             saveDict = [[NSMutableDictionary alloc] init];
+        }
+        if(taskDict == nil){
+            taskDict = [[NSMutableDictionary alloc] init];
         }
         NSString *objectId = [offlineObject objectForKey:@"ObjectId"];
         if(objectId != nil){
@@ -192,7 +217,7 @@
         [defaults setObject:userDict forKey:[PFUser currentUser].username];
         [defaults synchronize];
         
-    
+    //Save New Task to Parse or Local Storage
     }else{
         PFObject *object = [PFObject objectWithClassName:@"Task"];
         PFUser *current = [PFUser currentUser];
@@ -203,17 +228,26 @@
         NSNumber *timeInt = [formatter numberFromString:timeText.text];
         object[@"Time"] = timeInt;
         object[@"User"] = current;
+        NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+            NSMutableDictionary *userDict = [defaults objectForKey:[PFUser currentUser].username];
+            if(userDict == nil){
+                userDict = [[NSMutableDictionary alloc] init];
+            }
         if([self checkConnection]){
             [object saveInBackground];
             [self saveTimeStamp];
         }else{
-            NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
-            NSMutableDictionary *saveDict = (NSMutableDictionary *)[[defaults objectForKey:[PFUser currentUser].username] objectForKey:@"Save"];
+            NSMutableDictionary *saveDict = [[userDict objectForKey:@"Save"] mutableCopy];
+            if(saveDict == nil){
+                saveDict = [[NSMutableDictionary alloc] init];
+            }
             [self saveObject:object :saveDict :@"Save"];
             
         }
-        NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
-        NSMutableDictionary *tasksDict = (NSMutableDictionary *)[[defaults objectForKey:[PFUser currentUser].username] objectForKey:@"Tasks"];
+        NSMutableDictionary *tasksDict = [userDict objectForKey:@"Tasks"];
+        if(tasksDict == nil){
+            tasksDict = [[NSMutableDictionary alloc] init];
+        }
         [self saveObject:object :tasksDict: @"Tasks"];
     }
    
@@ -221,6 +255,7 @@
 
 }
 
+//Save Task to Local Storage
 -(void)saveObject:(PFObject *)task :(NSMutableDictionary *)tasksDict :(NSString *)dictKey{
     NSArray *keys = [task allKeys];
     if(tasksDict != nil){
@@ -244,11 +279,15 @@
     }
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     NSMutableDictionary *userDict = [[defaults objectForKey:[PFUser currentUser].username] mutableCopy];
+    if(userDict == nil){
+        userDict = [[NSMutableDictionary alloc] init];
+    }
     [userDict setObject:tasksDict forKey:dictKey];
     [defaults setObject:userDict forKey:[PFUser currentUser].username];
     [defaults synchronize];
 }
 
+//Save TimeStamp to Parse
 -(void)saveTimeStamp{
     PFQuery  *query = [PFQuery queryWithClassName:@"Changes"];
     [query whereKey:@"User" equalTo:[PFUser currentUser].username];
@@ -266,6 +305,7 @@
     }];
 }
 
+//Check for Network Connection
 -(BOOL)checkConnection{
     Reachability *network = [Reachability reachabilityWithHostName:@"www.google.com"];
     NetworkStatus status = [network currentReachabilityStatus];

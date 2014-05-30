@@ -1,7 +1,7 @@
 package com.jtilley.things2do;
 //Justin Tilley
 //CPMD 
-//Project 2
+//Project 4
 
 import java.util.List;
 
@@ -34,7 +34,11 @@ import android.widget.TextView;
 
 public class ListActivity extends Activity {
 PlaceholderFragment frag;
+ParseUser current;
 String timeStamp;
+Boolean offline;
+Handler parseHandler;
+Runnable parseSync;
 Context mContext;
 
 	@Override
@@ -53,8 +57,6 @@ Context mContext;
 		}else{
 			frag = (PlaceholderFragment) getFragmentManager().findFragmentByTag("list_frag");
 		}
-		
-		
 	}
 
 	@Override
@@ -62,47 +64,60 @@ Context mContext;
 		// TODO Auto-generated method stub
 		super.onResume();
 		//Get and Display Current User Data
-		ParseUser current = ParseUser.getCurrentUser();
+		current = ParseUser.getCurrentUser();
 		if(current != null){
 			setTitle(current.getUsername() + "'s List");
-			getList();
 			
-			ParseQuery<ParseObject> query = ParseQuery.getQuery("Changes");
-			query.whereEqualTo("User", current.getUsername());
-			query.findInBackground(new FindCallback<ParseObject>() {
-				
-				@Override
-				public void done(List<ParseObject> list, ParseException e) {
-					// TODO Auto-generated method stub
-					if(e == null){
-						if(list.size() > 0){
-							timeStamp = list.get(0).getString("TimeStamp");
-						}
-					}
-				}
-			});
+			if(checkConnection()){
+				offline = false;
+				getTimeStamp();
+			}else{
+				offline = true;
+				timeStamp = "0";
+			}
 			checkOfflineChanges();
-			final Handler parseHandler = new Handler();
-			final Runnable parseSync = new Runnable() {
+			//Create Handler for Sync and Check Network Changes
+			parseHandler = new Handler();
+			parseSync = new Runnable() {
 				
 				@Override
 				public void run() {
 					// TODO Auto-generated method stub
-					checkChanges();
+					if(offline){
+						if(checkConnection()){
+							checkOfflineChanges();
+							getList();
+							offline = false;
+						}
+					}else{
+						if(!checkConnection()){
+							getList();
+							offline = true;
+						}
+					}
+					if(checkConnection()){
+						checkOfflineChanges();
+						checkChanges();	
+						
+					}
 					parseHandler.postDelayed(this, 10000);
 				}
 			};
 			parseHandler.postDelayed(parseSync, 10000);
-			
 		}
+		getList();
 	}
 	
 	//Get List of Tasks linked to Current User
 	public void getList(){
 		ParseQuery<ParseObject> query = ParseQuery.getQuery("Task");
 		query.whereEqualTo("User", ParseUser.getCurrentUser());
-		if(checkConnection() == false){
+		
+		//Get LocalDataStore or Get from Parse Server
+		if(!checkConnection()){
 			query.fromLocalDatastore();
+		}else{
+			ParseObject.unpinAllInBackground();
 		}
 		query.findInBackground(new FindCallback<ParseObject>() {
 	
@@ -110,9 +125,6 @@ Context mContext;
 			public void done(List<ParseObject> list, ParseException e) {
 				// TODO Auto-generated method stub
 				if(e == null){
-					if(checkConnection()){	
-						ParseObject.unpinAllInBackground();
-					}
 					ParseObject.pinAllInBackground(list);
 					frag.displayList(list);
 				}
@@ -120,6 +132,7 @@ Context mContext;
 		});
 	}
 	
+	//Set TimeStamp for Current Changes
 	public void setTimeStamp(){
 		ParseQuery<ParseObject> query = ParseQuery.getQuery("Changes");
 		query.findInBackground(new FindCallback<ParseObject>() {
@@ -139,13 +152,16 @@ Context mContext;
 						timeSObject.put("TimeStamp", String.valueOf(System.currentTimeMillis()));
 						timeSObject.saveInBackground();
 					}
+					getTimeStamp();
 				}
 			}
 		});
 	}
 	
+	//Check for Changes done Offline and TimeStamp
 	public void checkOfflineChanges(){
-		SharedPreferences prefs = getSharedPreferences(ParseUser.getCurrentUser().getUsername(), 0);
+		
+		final SharedPreferences prefs = getSharedPreferences(ParseUser.getCurrentUser().getUsername(), 0);
 		if(prefs != null){
 			Boolean changed = prefs.getBoolean("Changed", false);
 			if(changed){
@@ -167,13 +183,14 @@ Context mContext;
 								timeSObject.put("TimeStamp", String.valueOf(System.currentTimeMillis()));
 								timeSObject.saveInBackground();
 							}
-							
+							SharedPreferences.Editor editPrefs = prefs.edit();
+							editPrefs.putBoolean("Changed", false);
+							editPrefs.commit();
+							getTimeStamp();
 						}
 					}
 				});
-				SharedPreferences.Editor editPrefs = prefs.edit();
-				editPrefs.putBoolean("Changed", false);
-				editPrefs.commit();
+				getList();	
 			}
 		}
 	}
@@ -189,8 +206,28 @@ Context mContext;
 		return connected;
 	}
 	
+	//Get TimeStamp from Server
+	public void getTimeStamp(){
+		
+		ParseQuery<ParseObject> query = ParseQuery.getQuery("Changes");
+		query.whereEqualTo("User", current.getUsername());
+		query.findInBackground(new FindCallback<ParseObject>() {
+			
+			@Override
+			public void done(List<ParseObject> list, ParseException e) {
+				// TODO Auto-generated method stub
+				if(e == null){
+					if(list.size() > 0){
+						timeStamp = list.get(0).getString("TimeStamp");
+					}
+				}
+			}
+		});
+	}
+	
 	//LogOut Current User and navigate to Login
 	public void logoutUser(){
+		parseHandler.removeCallbacks(parseSync);
 		ParseUser.logOut();
 		Intent intent = new Intent(this, MainActivity.class);
 		intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
@@ -231,6 +268,7 @@ Context mContext;
 		return super.onOptionsItemSelected(item);
 	}
 	
+	//Check for Changes on Server
 	public void checkChanges(){
 		
 		ParseQuery<ParseObject> query = ParseQuery.getQuery("Changes");
@@ -243,8 +281,11 @@ Context mContext;
 				if(e == null){
 					if(list.size() > 0){
 						String newTime = list.get(0).getString("TimeStamp");
-						if(!timeStamp.equalsIgnoreCase(newTime)){
-							getList();
+						if(timeStamp != null){
+							if(!timeStamp.equalsIgnoreCase(newTime)){
+								getList();
+								timeStamp = newTime;
+							}
 						}
 					}
 				}

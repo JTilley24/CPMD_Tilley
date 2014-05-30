@@ -18,6 +18,7 @@
     NSMutableDictionary *tasksDict;
     NSIndexPath *selectedTask;
     PFUser *current;
+    BOOL offline;
 }
 @property NSString *userTimestamp;
 -(IBAction)onClick:(id)sender;

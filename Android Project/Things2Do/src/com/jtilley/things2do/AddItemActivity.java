@@ -1,7 +1,7 @@
 package com.jtilley.things2do;
 //Justin Tilley
 //CPMD 
-//Project 2
+//Project 4
 
 import java.util.Calendar;
 import java.util.List;
@@ -54,7 +54,6 @@ public String objectId;
 		objectDate = intent.getStringExtra("date");
 		objectTime = intent.getIntExtra("time", 0);
 		objectId = intent.getStringExtra("objectid");
-		
 		
 		
 		if (savedInstanceState == null) {
@@ -117,6 +116,7 @@ public String objectId;
 	
 	//Save Item and link to Current User
 	public void saveItem(final String name, final String date, final int time){
+		//Check for Editing Object or New Task
 		if(objectId != null){
 			ParseQuery<ParseObject> query = ParseQuery.getQuery("Task");
 			if(!checkConnection()){
@@ -133,7 +133,14 @@ public String objectId;
 								temp.put("Name", name);
 								temp.put("Date", date);
 								temp.put("Time", time);
-								temp.saveEventually();
+								temp.saveEventually(new SaveCallback() {
+									
+									@Override
+									public void done(ParseException arg0) {
+										// TODO Auto-generated method stub
+										timeStamp();
+									}
+								});
 								setChanges();
 								finish();
 							}
@@ -155,11 +162,10 @@ public String objectId;
 									@Override
 									public void done(ParseException arg0) {
 										// TODO Auto-generated method stub
-										timeStampUser();
+										timeStamp();
 										finish();
 									}
 								});
-						
 						}
 					}
 				});
@@ -178,19 +184,27 @@ public String objectId;
 					@Override
 					public void done(ParseException arg0) {
 						// TODO Auto-generated method stub
-						timeStampUser();
+						timeStamp();
 						finish();
 					}
 				});
 			}else{
-				task.saveEventually();
+				task.saveEventually(new SaveCallback() {
+					
+					@Override
+					public void done(ParseException arg0) {
+						// TODO Auto-generated method stub
+						timeStamp();
+					}
+				});
 				setChanges();
 				finish();
 			}
 		}
 	}
 	
-	public void timeStampUser(){
+	//TimeStamp For Sync
+	public void timeStamp(){
 		ParseQuery<ParseObject> query = ParseQuery.getQuery("Changes");
 		query.findInBackground(new FindCallback<ParseObject>() {
 			
@@ -214,6 +228,7 @@ public String objectId;
 		});
 	}
 	
+	//Set Offline Changes
 	public void setChanges(){
 		SharedPreferences prefs = getSharedPreferences(ParseUser.getCurrentUser().getUsername(), 0);
 		SharedPreferences.Editor editPrefs = prefs.edit();

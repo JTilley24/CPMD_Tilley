@@ -34,67 +34,130 @@
 
 -(void)viewDidAppear:(BOOL)animate
 {
+    //Create Custom Table Cell
     UINib *taskCellNib = [UINib nibWithNibName:@"TaskTableCell" bundle:nil];
     if(taskCellNib != nil){
         [taskTable registerNib:taskCellNib forCellReuseIdentifier:@"CustomCell"];
     }
-    [self initDefaults];
-}
-
--(void) checkForChange{
-    PFQuery  *query = [PFQuery queryWithClassName:@"Changes"];
-    [query whereKey:@"User" equalTo:[PFUser currentUser].username];
-    [query findObjectsInBackgroundWithBlock:^(NSArray *objects, NSError *error) {
-        if([objects count] > 0){
-            NSString *time = [[objects objectAtIndex:0] objectForKey:@"TimeStamp"];
-            if(![time isEqualToString:userTimestamp]){
-                [self initDefaults];
-            }
+    
+    current = [PFUser currentUser];
+    tasksArray = [[NSMutableArray alloc] init];
+    if(current){
+        NSString *currentUserName = [[NSString alloc] initWithFormat:@"%@'s List",  current[@"username"]];
+        self.title = currentUserName;
+        
+        if([self checkConnection]){
+            offline = NO;
+        }else{
+            offline = YES;
         }
-    }];
+        //Begin Loading Process
+        [self initDefaults];
+    }
 }
 
+//Check For Changes in Network and Server
+-(void) checkForChange{
+    if(offline){
+        if([self checkConnection]){
+            offline = NO;
+            [self initDefaults];
+        }
+    }else{
+        if(![self checkConnection]){
+            offline = YES;
+            [self initDefaults];
+        }
+    }
+    if([self checkConnection]){
+        offline = NO;
+        PFQuery  *query = [PFQuery queryWithClassName:@"Changes"];
+        [query whereKey:@"User" equalTo: current.username];
+        [query findObjectsInBackgroundWithBlock:^(NSArray *objects, NSError *error) {
+            if([objects count] > 0){
+                NSString *time = [[objects objectAtIndex:0] objectForKey:@"TimeStamp"];
+                if(![time isEqualToString:userTimestamp]){
+                    [self initDefaults];
+                }
+            }
+        }];
+    }else{
+        offline = YES;
+    }
+}
+
+
+//Display Offline Tasks and Retrieve Tasks from Parse if available
 -(void) initDefaults{
     tasksDict = [[NSMutableDictionary alloc] init];
     saveDict = [[NSMutableDictionary alloc] init];
-    tasksArray = [[NSMutableArray alloc] init];
+    
+    //Get Offline Tasks and Previous Offline Changes
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
-    if([[defaults objectForKey:[PFUser currentUser].username] objectForKey:@"Tasks"] != nil){
-        tasksDict = [[[defaults objectForKey:[PFUser currentUser].username] objectForKey:@"Tasks"] mutableCopy];
+    if([[defaults objectForKey:current.username] objectForKey:@"Tasks"] != nil){
+        tasksDict = [[[defaults objectForKey:current.username] objectForKey:@"Tasks"] mutableCopy];
     }
-    if([[defaults objectForKey:[PFUser currentUser].username] objectForKey:@"Save"]){
-        saveDict = [[[defaults objectForKey:[PFUser currentUser].username] objectForKey:@"Save"] mutableCopy];
+    if([[defaults objectForKey:current.username] objectForKey:@"Save"] != nil){
+        saveDict = [[[defaults objectForKey:current.username] objectForKey:@"Save"] mutableCopy];
 
     }
+    //Set Timer
+    PFQuery  *query = [PFQuery queryWithClassName:@"Changes"];
+    [query whereKey:@"User" equalTo: current.username];
+    [query findObjectsInBackgroundWithBlock:^(NSArray *objects, NSError *error) {
+                if([objects count] > 0){
+                    userTimestamp = [[objects objectAtIndex:0] objectForKey:@"TimeStamp"];
+                }
+    }];
+    [NSTimer scheduledTimerWithTimeInterval:10.0 target:self selector:@selector(checkForChange) userInfo:nil repeats:YES];
+    //Check for Previous Offline Tasks
     if([self checkConnection]){
         if([saveDict count] != 0){
             [self sendToParse];
         }else{
             [self getTasks];
-            PFQuery  *query = [PFQuery queryWithClassName:@"Changes"];
-            [query whereKey:@"User" equalTo:[PFUser currentUser].username];
-            [query findObjectsInBackgroundWithBlock:^(NSArray *objects, NSError *error) {
-                if([objects count] > 0){
-                    userTimestamp = [[objects objectAtIndex:0] objectForKey:@"TimeStamp"];
-                    [NSTimer scheduledTimerWithTimeInterval:10.0 target:self selector:@selector(checkForChange) userInfo:nil repeats:YES];
-                }
-            }];
+            
         }
     }
     
     [taskTable reloadData];
 }
 
+//Save Offline Tasks to Parse
 -(void) sendToParse{
         NSArray *keys = [saveDict allKeys];
         for(NSString *key in keys){
+            if([[saveDict objectForKey:key] objectForKey:@"Delete"] != nil){
+                PFQuery *query = [PFQuery queryWithClassName:@"Task"];
+                [query whereKey:@"User" equalTo:current];
+                [query findObjectsInBackgroundWithBlock:^(NSArray *objects, NSError *error) {
+                    for (PFObject * object in objects) {
+                        if(object.objectId == [[saveDict objectForKey:key] objectForKey:@"ObjectId"]){
+                           [object deleteInBackgroundWithBlock:^(BOOL succeeded, NSError *error) {
+                               if(!error){
+                                   [self getTasks];
+                               }
+                           }];
+                        }
+                    }
+                }];
+                [saveDict removeObjectForKey:key];
+                NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+                NSMutableDictionary *userDict = [[defaults objectForKey:current.username] mutableCopy];
+                if(userDict == nil){
+                    userDict = [[NSMutableDictionary alloc] init];
+                }
+                [userDict setObject:saveDict forKey:@"Save"];
+                [defaults setObject:userDict forKey:current.username];
+                [defaults synchronize];
+            }
             if([[saveDict objectForKey:key] objectForKey:@"ObjectId"] == nil){
-                NSMutableDictionary *savedTask = [saveDict objectForKey:key];
+                NSMutableDictionary *savedTask = [[saveDict objectForKey:key] mutableCopy];
                 PFObject *newTask = [PFObject objectWithClassName:@"Task"];
                 newTask[@"Name"] = [savedTask objectForKey:@"Name"];
                 newTask[@"Date"] = [savedTask objectForKey:@"Date"];
                 newTask[@"Time"] = [savedTask objectForKey:@"Time"];
-                newTask[@"User"] = [PFUser currentUser];
+                newTask[@"User"] = current;
                 [newTask saveInBackgroundWithBlock:^(BOOL succeeded, NSError *error) {
                     if(!error){
                         [self getTasks];
@@ -102,21 +165,49 @@
                 }];
                 [saveDict removeObjectForKey:key];
                 NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
-                NSMutableDictionary *userDict = [[defaults objectForKey:[PFUser currentUser].username] mutableCopy];
+                NSMutableDictionary *userDict = [[defaults objectForKey:current.username] mutableCopy];
+                if(userDict == nil){
+                    userDict = [[NSMutableDictionary alloc] init];
+                }
                 [userDict setObject:saveDict forKey:@"Save"];
-                [defaults setObject:userDict forKey:[PFUser currentUser].username];
+                [defaults setObject:userDict forKey:current.username];
                 [defaults synchronize];
-                [self saveTimeStamp];
+                
+            }else{
+                PFQuery *query = [PFQuery queryWithClassName:@"Task"];
+                [query whereKey:@"User" equalTo:current];
+                [query findObjectsInBackgroundWithBlock:^(NSArray *objects, NSError *error) {
+                    for (PFObject * object in objects) {
+                        NSMutableDictionary *savedTask = [[saveDict objectForKey:key] mutableCopy];
+                        if(object.objectId == [[saveDict objectForKey:key] objectForKey:@"ObjectId"]){
+                            object[@"Name"] = [savedTask objectForKey:@"Name"];
+                            object[@"Date"] = [savedTask objectForKey:@"Date"];
+                            object[@"Time"] = [savedTask objectForKey:@"Time"];
+                            [object saveInBackgroundWithBlock:^(BOOL succeeded, NSError *error) {
+                                if(!error){
+                                    [self getTasks];
+                                }
+                            }];
+                        }
+                    }
+                }];
+                [saveDict removeObjectForKey:key];
+                NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+                NSMutableDictionary *userDict = [[defaults objectForKey:current.username] mutableCopy];
+                if(userDict == nil){
+                    userDict = [[NSMutableDictionary alloc] init];
+                }
+                [userDict setObject:saveDict forKey:@"Save"];
+                [defaults setObject:userDict forKey:current.username];
+                [defaults synchronize];
             }
         }
+        [self saveTimeStamp];
 }
 
+//
 -(void) getTasks
 {
-    current = [PFUser currentUser];
-    if(current){
-        NSString *currentUserName = [[NSString alloc] initWithFormat:@"%@'s List",  current[@"username"]];
-        self.title = currentUserName;
         PFQuery *query = [PFQuery queryWithClassName:@"Task"];
         [query whereKey:@"User" equalTo:current];
         query.cachePolicy = kPFCachePolicyNetworkOnly;
@@ -149,12 +240,15 @@
         [taskTable reloadData];
         }];
         [taskTable reloadData];
-    }
+    
 }
 
 -(void) clearSaves{
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     NSMutableDictionary *userDict = [[defaults objectForKey:[PFUser currentUser].username] mutableCopy];
+    if(userDict == nil){
+        userDict = [[NSMutableDictionary alloc] init];
+    }
     NSMutableDictionary *saves = [[NSMutableDictionary alloc] init];
     [userDict setObject:saves forKey:@"Save"];
     [defaults setObject:userDict forKey:[PFUser currentUser].username];
@@ -165,6 +259,9 @@
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     
     NSMutableDictionary *userDict = [[NSMutableDictionary alloc] init];
+    if(userDict == nil){
+        userDict = [[NSMutableDictionary alloc] init];
+    }
     [userDict setObject:tasksDict forKey:@"Tasks"];
     [defaults setObject:userDict forKey:[PFUser currentUser].username];
     [defaults synchronize];
@@ -237,9 +334,34 @@
                 [[tasksArray objectAtIndex:objectIndex] deleteInBackground];
                 [tasksArray removeObjectAtIndex:objectIndex];
             }else{
-                
+                NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+                NSMutableDictionary *userDict = [[defaults objectForKey:[PFUser currentUser].username] mutableCopy];
+                if(userDict == nil){
+                    userDict = [[NSMutableDictionary alloc] init];
+                }
+                NSMutableDictionary *deleteDict = [[userDict objectForKey:@"Save"] mutableCopy];
+                if(deleteDict == nil){
+                    deleteDict = [[NSMutableDictionary alloc] init];
+                }
+                NSMutableDictionary *taskDict = [[NSMutableDictionary alloc] init];
+                PFObject *temp = [tasksArray objectAtIndex:objectIndex];
+                NSArray *keys = [temp allKeys];
+                for(NSString *key in keys){
+                    if([key isEqualToString:@"Date"] || [key isEqualToString:@"Name"] || [key isEqualToString:@"Time"]){
+                        [taskDict setObject:[temp objectForKey:key] forKey:key];
+                    }
+                }
+                [taskDict setObject:@"Delete" forKey:@"Delete"];
+                NSString *objectId = [temp objectId];
+                [taskDict setObject:objectId forKey:@"ObjectId"];
+                [saveDict setObject:taskDict forKey:[temp objectId]];
+               
+                [userDict setObject:saveDict forKey:@"Save"];
+                [defaults setObject:userDict forKey:[PFUser currentUser].username];
+                [defaults synchronize];
                 [[tasksArray objectAtIndex:objectIndex] deleteEventually];
                 [tasksArray removeObjectAtIndex:objectIndex];
+                userTimestamp = [NSString stringWithFormat:@"%f", [[NSDate date] timeIntervalSince1970] * 1000];
             }
         }else{
             NSArray *saveKeys = [saveDict allKeys];
@@ -247,11 +369,14 @@
                 if([[[tasksDict objectForKey:[[tasksDict allKeys] objectAtIndex:selectedTask.row]] objectForKey:@"Name"] isEqualToValue:[[saveDict objectForKey:saveKey] objectForKey:@"Name"]]){
                     [saveDict removeObjectForKey:saveKey];
                     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
-                    NSMutableDictionary *userDict = (NSMutableDictionary *)[defaults objectForKey:[PFUser currentUser].username];
+                    NSMutableDictionary *userDict = [[defaults objectForKey:[PFUser currentUser].username] mutableCopy];
+                    if(userDict == nil){
+                        userDict = [[NSMutableDictionary alloc] init];
+                    }
                     [userDict setObject:saveDict forKey:@"Save"];
                     [defaults setObject:userDict forKey:[PFUser currentUser].username];
                     [defaults synchronize];
-                    
+                    [self saveTimeStamp];
                 }
             }
         }
@@ -281,17 +406,22 @@
     PFQuery  *query = [PFQuery queryWithClassName:@"Changes"];
     [query whereKey:@"User" equalTo:[PFUser currentUser].username];
     [query findObjectsInBackgroundWithBlock:^(NSArray *objects, NSError *error) {
+        NSString *newTimeStamp = [NSString stringWithFormat:@"%f", [[NSDate date] timeIntervalSince1970] * 1000];
+
         if([objects count] > 0){
             PFObject *temp = [objects objectAtIndex:0];
-            temp[@"TimeStamp"] = [NSString stringWithFormat:@"%f", [[NSDate date] timeIntervalSince1970] * 1000];
+            temp[@"TimeStamp"] = newTimeStamp;
             [temp saveInBackground];
+            userTimestamp = newTimeStamp;
         }else{
             PFObject *newTime = [PFObject objectWithClassName:@"Changes"];
             newTime[@"User"] = [PFUser currentUser].username;
-            newTime[@"TimeStamp"] = [NSString stringWithFormat:@"%f", [[NSDate date] timeIntervalSince1970] * 1000];
+            newTime[@"TimeStamp"] = newTimeStamp;
             [newTime saveInBackground];
+            userTimestamp = newTimeStamp;
         }
     }];
+   
 }
 
 

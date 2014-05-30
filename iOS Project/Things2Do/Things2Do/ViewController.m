@@ -19,6 +19,7 @@
 {
     
     [super viewDidLoad];
+    //Check for Current User and Send to ListView
     PFUser *current = [PFUser currentUser];
     if(current != nil){
         ListViewController *list = [self.storyboard instantiateViewControllerWithIdentifier:@"taskList"];
@@ -33,6 +34,7 @@
     // Dispose of any resources that can be recreated.
 }
 
+//Change from Login to Signup and Validate Inputs
 -(IBAction)onClick:(id)sender
 {
     UIButton *button = (UIButton*) sender;
@@ -75,8 +77,7 @@
                     user.email = email;
                     [user signUpInBackgroundWithBlock:^(BOOL succeeded, NSError *error) {
                         if(!error){
-                            ListViewController *list = [self.storyboard     instantiateViewControllerWithIdentifier:@"list"];
-                            [self performSegueWithIdentifier:@"listSegue" sender:list];
+                            [self performSegueWithIdentifier:@"listSegue" sender:self];
                         }else{
                             NSString *errorText = @"";
                             if(error.code == kPFErrorAccountAlreadyLinked){
@@ -105,6 +106,7 @@
     }
 }
 
+//Validate Password
 -(BOOL)validatePasssword{
    NSString *pattern = @"((?=.*\\d)(?=.*[a-z]).{6,20})";
     NSPredicate *predicate = [NSPredicate predicateWithFormat:@"SELF MATCHES %@", pattern];
@@ -114,6 +116,7 @@
     return NO;
 }
 
+//Hide Keyboard
 -(IBAction)hideKeyboard:(id)sender
 {
     [sender resignFirstResponder];

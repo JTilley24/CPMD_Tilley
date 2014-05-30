@@ -182,7 +182,7 @@
             </objects>
             <point key="canvasLocation" x="-603" y="-1465"/>
         </scene>
-        <!--Add Item View Controller-->
+        <!--Add Item View Controller - Add Task-->
         <scene sceneID="fUj-Gf-D5b">
             <objects>
                 <viewController storyboardIdentifier="addItem" id="sMc-4a-khi" customClass="AddItemViewController" sceneMemberID="viewController">
@@ -272,7 +272,7 @@ AQABAAEAAQAB//+dkAEA//+PgAAE//+dkAEI//+dkAEMUERUAFBTVABQV1QAUFBUAAAAAAEAAAABA
                         </subviews>
                         <color key="backgroundColor" cocoaTouchSystemColor="groupTableViewBackgroundColor"/>
                     </view>
-                    <navigationItem key="navigationItem" id="c2u-hb-sw1">
+                    <navigationItem key="navigationItem" title="Add Task" id="c2u-hb-sw1">
                         <barButtonItem key="leftBarButtonItem" systemItem="cancel" id="STZ-2G-lf6">
                             <connections>
                                 <action selector="onClick:" destination="sMc-4a-khi" id="fiQ-ne-0Oc"/>
